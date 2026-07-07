@@ -1,8 +1,9 @@
 # Infrastructure (OpenTofu / Terraform, AWS)
 
 Demonstration-quality IaC for running the auth API on AWS in `ca-central-1`.
-It is **validated statically, never applied**; see
-[Why this is not applied](#why-this-is-not-applied).
+Validated statically **and applied end to end against a simulated AWS**
+(LocalStack) — no billable account; see
+[Running it on LocalStack](#running-it-on-localstack-simulated-aws).
 
 ## What it provisions
 
