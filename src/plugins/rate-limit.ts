@@ -52,23 +52,6 @@ export class RedisRateLimiter {
     };
   }
 
-  /**
-   * Read the current state without consuming an attempt: allowed while
-   * strictly fewer than max attempts have been recorded.
-   */
-  async peek(policy: WindowPolicy, subject: string): Promise<WindowState> {
-    const key = this.key(policy, subject);
-    const replies = await this.redis.multi().get(key).ttl(key).exec();
-    const raw: unknown = replies[0];
-    const count = raw === null ? 0 : Number(raw);
-    const ttl = Number(replies[1]);
-    return {
-      allowed: count < policy.max,
-      remaining: Math.max(0, policy.max - count),
-      resetSeconds: ttl > 0 ? ttl : policy.windowSeconds,
-    };
-  }
-
   /** Drop the counter (e.g. successful login clears the failure window). */
   async clear(policy: WindowPolicy, subject: string): Promise<void> {
     await this.redis.del(this.key(policy, subject));

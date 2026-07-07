@@ -65,6 +65,8 @@ export function registerUserRoutes(instance: FastifyInstance, deps: UserRouteDep
           201: CreateUserReply,
           400: ProblemSchema,
           409: ProblemSchema,
+          413: ProblemSchema,
+          415: ProblemSchema,
           422: ProblemSchema,
           429: ProblemSchema,
         },

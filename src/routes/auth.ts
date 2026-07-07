@@ -64,6 +64,8 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
           200: LoginReply,
           400: ProblemSchema,
           401: ProblemSchema,
+          413: ProblemSchema,
+          415: ProblemSchema,
           429: ProblemSchema,
         },
       },
@@ -78,7 +80,13 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
         ? normalized.value
         : rawUsername.normalize('NFC').trim().toLowerCase().slice(0, 64);
 
-      const gate = await deps.limiter.peek(failurePolicy, subject);
+      // Atomically CONSUME one slot from the failure window BEFORE the
+      // expensive Argon2id verify. A read-only check here would be a TOCTOU
+      // race: a concurrent burst of guesses could all observe count<max and
+      // slip past the cap while their verifies run. Redis INCR serializes
+      // them, so at most `max` guesses per window ever reach verification.
+      // The window is cleared on success, so legitimate users are unaffected.
+      const gate = await deps.limiter.hit(failurePolicy, subject);
       if (!gate.allowed) {
         deps.metrics.rateLimited.inc({ scope: 'username' });
         deps.metrics.authAttempts.inc({ outcome: 'rate_limited' });
@@ -108,12 +116,12 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
       }
 
       if (verifiedUsername === undefined) {
-        const state = await deps.limiter.hit(failurePolicy, subject);
+        // The slot was already consumed at the gate above — do not double-count.
         deps.metrics.authAttempts.inc({ outcome: 'invalid' });
         audit(request.log, 'auth.failure', { username: subject, ip: request.ip });
         throw new ProblemError('INVALID_CREDENTIALS', {
           detail: 'Username or password is incorrect.',
-          headers: rateLimitHeaders(failurePolicy, state),
+          headers: rateLimitHeaders(failurePolicy, gate),
         });
       }
 
