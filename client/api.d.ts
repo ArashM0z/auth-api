@@ -146,7 +146,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -211,7 +211,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -241,7 +241,67 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
+            /** @description URI reference identifying the problem type */
+            type: string;
+            /** @description Short human-readable summary of the problem type */
+            title: string;
+            /** @description HTTP status code */
+            status: number;
+            /** @description Stable machine-readable problem code */
+            code: string;
+            /** @description Occurrence-specific explanation */
+            detail?: string;
+            /** @description URI of the request that failed */
+            instance?: string;
+            /** @description Correlation id (X-Request-Id) */
+            requestId?: string;
+            /** @description Field-level validation failures */
+            errors?: {
+              field: string;
+              rule: string;
+              message: string;
+            }[];
+          };
+        };
+      };
+      /** @description RFC 9457 Problem Details */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            /** @description URI reference identifying the problem type */
+            type: string;
+            /** @description Short human-readable summary of the problem type */
+            title: string;
+            /** @description HTTP status code */
+            status: number;
+            /** @description Stable machine-readable problem code */
+            code: string;
+            /** @description Occurrence-specific explanation */
+            detail?: string;
+            /** @description URI of the request that failed */
+            instance?: string;
+            /** @description Correlation id (X-Request-Id) */
+            requestId?: string;
+            /** @description Field-level validation failures */
+            errors?: {
+              field: string;
+              rule: string;
+              message: string;
+            }[];
+          };
+        };
+      };
+      /** @description RFC 9457 Problem Details */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -271,7 +331,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -301,7 +361,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -364,7 +424,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -394,7 +454,67 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
+            /** @description URI reference identifying the problem type */
+            type: string;
+            /** @description Short human-readable summary of the problem type */
+            title: string;
+            /** @description HTTP status code */
+            status: number;
+            /** @description Stable machine-readable problem code */
+            code: string;
+            /** @description Occurrence-specific explanation */
+            detail?: string;
+            /** @description URI of the request that failed */
+            instance?: string;
+            /** @description Correlation id (X-Request-Id) */
+            requestId?: string;
+            /** @description Field-level validation failures */
+            errors?: {
+              field: string;
+              rule: string;
+              message: string;
+            }[];
+          };
+        };
+      };
+      /** @description RFC 9457 Problem Details */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
+            /** @description URI reference identifying the problem type */
+            type: string;
+            /** @description Short human-readable summary of the problem type */
+            title: string;
+            /** @description HTTP status code */
+            status: number;
+            /** @description Stable machine-readable problem code */
+            code: string;
+            /** @description Occurrence-specific explanation */
+            detail?: string;
+            /** @description URI of the request that failed */
+            instance?: string;
+            /** @description Correlation id (X-Request-Id) */
+            requestId?: string;
+            /** @description Field-level validation failures */
+            errors?: {
+              field: string;
+              rule: string;
+              message: string;
+            }[];
+          };
+        };
+      };
+      /** @description RFC 9457 Problem Details */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */
@@ -424,7 +544,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
+          'application/problem+json': {
             /** @description URI reference identifying the problem type */
             type: string;
             /** @description Short human-readable summary of the problem type */

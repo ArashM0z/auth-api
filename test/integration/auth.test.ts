@@ -55,11 +55,35 @@ describe('POST /v1/auth/login', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('emits draft RateLimit headers on failures', async () => {
-    await createUser(app, 'alice');
-    const res = await login(app, 'alice', 'wrong but long enough password');
-    expect(res.headers.ratelimit).toMatch(/^"login-failures";r=\d+;t=\d+$/);
-    expect(res.headers['ratelimit-policy']).toBe('"login-failures";q=10;w=900');
+  it('emits draft RateLimit headers whose remaining value tracks the live limiter', async () => {
+    const limited = await makeApp({ RATE_LIMIT_LOGIN_FAILURES_MAX: '10' });
+    try {
+      await limited.redis.flushDb();
+      await createUser(limited, 'alice');
+      const first = await login(limited, 'alice', 'wrong but long enough password');
+      const second = await login(limited, 'alice', 'wrong but long enough password');
+      expect(first.headers['ratelimit-policy']).toBe('"login-failures";q=10;w=900');
+      // Two failures consumed → remaining decrements 9, then 8 (not a constant).
+      expect(first.headers.ratelimit).toMatch(/^"login-failures";r=9;t=\d+$/);
+      expect(second.headers.ratelimit).toMatch(/^"login-failures";r=8;t=\d+$/);
+    } finally {
+      await limited.close();
+    }
+  });
+
+  it('turns an unexpected datastore failure into a sanitized 500 (no internal leak)', async () => {
+    const faulty = await makeApp();
+    try {
+      faulty.redis.destroy(); // every subsequent Redis command now rejects
+      const res = await login(faulty, 'alice');
+      expect(res.statusCode).toBe(500);
+      expect(res.headers['content-type']).toContain('application/problem+json');
+      expect(res.json<{ code: string }>().code).toBe('INTERNAL_ERROR');
+      // No stack trace, driver error text, or connection details escape.
+      expect(res.body).not.toMatch(/stack|ECONN|redis|closed/i);
+    } finally {
+      await faulty.close();
+    }
   });
 
   it('transparently upgrades hashes created with outdated parameters', async () => {
@@ -89,6 +113,20 @@ describe('POST /v1/auth/login', () => {
     expect(stored.passwordHash).toContain('m=8192'); // upgraded to current params
     expect(stored.passwordRehashedAt).toBeDefined();
     expect(await argon2.verify(stored.passwordHash, GOOD_PASSWORD)).toBe(true);
+  });
+
+  it('does NOT rehash a current-parameter hash (no needless writes/corruption)', async () => {
+    await createUser(app, 'current');
+    const before = (await app.redis.get('user:current')) ?? '';
+    const res = await login(app, 'current');
+    expect(res.statusCode).toBe(200);
+
+    const after = (await app.redis.get('user:current')) ?? '';
+    // Byte-identical record: no rehash write happened on a login whose stored
+    // hash already matches current parameters.
+    expect(after).toBe(before);
+    const record = JSON.parse(after) as { passwordRehashedAt?: string };
+    expect(record.passwordRehashedAt).toBeUndefined();
   });
 });
 
@@ -134,6 +172,47 @@ describe('brute-force protection (per-username failure window)', () => {
       await login(limited, 'ghost', 'wrong but long enough password');
       const blocked = await login(limited, 'ghost', 'wrong but long enough password');
       expect(blocked.statusCode).toBe(429);
+    } finally {
+      await limited.close();
+    }
+  });
+
+  it('a CONCURRENT burst cannot exceed the cap (atomic gate — TOCTOU regression)', async () => {
+    const max = 3;
+    const limited = await makeApp({ RATE_LIMIT_LOGIN_FAILURES_MAX: String(max) });
+    try {
+      await limited.redis.flushDb();
+      await createUser(limited, 'alice');
+      // Fire 20 wrong-password guesses for the same account simultaneously.
+      // With a read-then-verify-then-increment gate they would all slip
+      // through; with the atomic INCR gate at most `max` reach verification.
+      const results = await Promise.all(
+        Array.from({ length: 20 }, () => login(limited, 'alice', 'wrong but long enough password')),
+      );
+      const reachedVerify = results.filter((r) => r.statusCode === 401).length;
+      const rejected = results.filter((r) => r.statusCode === 429).length;
+      expect(reachedVerify).toBeLessThanOrEqual(max);
+      expect(reachedVerify + rejected).toBe(20);
+      expect(rejected).toBeGreaterThanOrEqual(20 - max);
+    } finally {
+      await limited.close();
+    }
+  });
+
+  it('sets a bounded TTL on the failure window so lockouts self-expire', async () => {
+    const limited = await makeApp({
+      RATE_LIMIT_LOGIN_FAILURES_MAX: '5',
+      RATE_LIMIT_LOGIN_FAILURES_WINDOW_SECONDS: '900',
+    });
+    try {
+      await limited.redis.flushDb();
+      await createUser(limited, 'alice');
+      await login(limited, 'alice', 'wrong but long enough password');
+      const ttl = await limited.redis.ttl('rl:login-failures:alice');
+      // A missing/incorrect EXPIRE would show -1 (no expiry → permanent
+      // lockout) or exceed the window; a correct one is in (0, 900].
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThanOrEqual(900);
     } finally {
       await limited.close();
     }
