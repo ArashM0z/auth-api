@@ -26,6 +26,12 @@ resource "aws_apigatewayv2_route" "proxy" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "ANY /{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.alb.id}"
+
+  # This gateway fronts an authentication service — the app verifies every
+  # request itself, so gateway-level auth (IAM/JWT) would be circular. The
+  # gateway's job here is throttling and a single entry point, not authz.
+  # checkov:skip=CKV_AWS_309:auth is enforced by the app; the gateway only throttles
+  authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_stage" "default" {
