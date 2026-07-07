@@ -65,7 +65,7 @@
           "503": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -193,7 +193,7 @@
           "400": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -256,7 +256,133 @@
           "409": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -319,7 +445,7 @@
           "422": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -382,7 +508,7 @@
           "429": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -507,7 +633,7 @@
           "400": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -570,7 +696,133 @@
           "401": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],
@@ -633,7 +885,7 @@
           "429": {
             "description": "RFC 9457 Problem Details",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "type": "object",
                   "required": ["type", "title", "status", "code"],

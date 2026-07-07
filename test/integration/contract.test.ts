@@ -50,10 +50,12 @@ describe('responses conform to the committed OpenAPI contract', () => {
     expect(validate(res.json())).toBe(true);
   });
 
-  it('409 duplicate-user problem matches the Problem schema', async () => {
+  it('409 duplicate-user problem matches the Problem schema (as application/problem+json)', async () => {
     await createUser(app, 'alice');
     const res = await createUser(app, 'alice');
-    const validate = ajv.compile(schemaFor('/v1/users', 'post', '409', 'application/json'));
+    // The wire Content-Type and the documented media type must agree.
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    const validate = ajv.compile(schemaFor('/v1/users', 'post', '409', 'application/problem+json'));
     expect(validate(res.json())).toBe(true);
   });
 
@@ -64,9 +66,12 @@ describe('responses conform to the committed OpenAPI contract', () => {
     expect(validate(res.json())).toBe(true);
   });
 
-  it('401 login problem matches the Problem schema', async () => {
+  it('401 login problem matches the Problem schema (as application/problem+json)', async () => {
     const res = await login(app, 'ghost', 'wrong but long enough password');
-    const validate = ajv.compile(schemaFor('/v1/auth/login', 'post', '401', 'application/json'));
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    const validate = ajv.compile(
+      schemaFor('/v1/auth/login', 'post', '401', 'application/problem+json'),
+    );
     expect(validate(res.json())).toBe(true);
   });
 });

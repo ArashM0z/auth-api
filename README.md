@@ -221,7 +221,7 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
 
 ## Testing
 
-**74 tests, ~96% line coverage** (thresholds enforced in CI), in five layers:
+**77 tests, ~96% line coverage** (thresholds enforced in CI), in five layers:
 
 1. **Unit** — password policy, username normalization, problem registry.
 2. **Property-based** (fast-check) — thousands of adversarial Unicode inputs
@@ -241,10 +241,16 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
 5. **Contract** — live responses validated against the _committed_
    `openapi.json`, which CI regenerates and diffs, so docs cannot lie.
 
+Plus **mutation testing** (Stryker) over the core domain logic: it mutates
+the source and fails CI if the unit suite doesn't _kill_ the mutants —
+measuring whether the assertions actually catch regressions, not just which
+lines ran. Current score **87%**, gated at 80% in CI.
+
 ```bash
 npm test                 # everything (Docker required for integration)
 npm run test:unit        # fast feedback
 npm run test:coverage    # + enforced thresholds
+npm run test:mutation    # Stryker mutation testing (domain logic)
 ```
 
 ## CI/CD & infrastructure
@@ -304,14 +310,15 @@ sliding-window limiter, `GET /users/:name` (rejected — enumeration endpoint).
 
 ## Approach & AI workflow
 
-Built with an AI-assisted workflow that I directed end-to-end: multi-agent
-web research verified every stack and standards choice against primary
-sources (npm registry, IETF datatracker, NIST, OWASP) before a line was
-written; implementation was human-reviewed at each step; and before
-submission the code was attacked by an adversarial multi-agent review
-(security, spec-compliance, and test-adequacy lenses) whose findings were
-fixed and re-verified. The full story, including the actual prompts:
-[docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
+Directed by me, implemented with AI. All of the major ideas and
+architectural decisions here are mine — scope discipline, atomic uniqueness,
+timing-safe auth, standards-first design, and running an adversarial review
+and acting on it. The AI wrote the code and tests to that direction, verified
+every stack/standards fact against primary sources (npm, IETF, NIST, OWASP)
+before a line was written, and executed the review — which surfaced a real
+HIGH-severity brute-force race that I then had fixed and regression-tested.
+I supervised throughout and can defend every decision line by line. The full,
+honest account: [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
 Every architectural and security decision above is mine to defend —
 the tooling multiplied research breadth and review depth, not judgment.

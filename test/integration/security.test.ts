@@ -72,7 +72,13 @@ describe('attack: timing side-channel', () => {
   // asserting on the ABSOLUTE gap (not a ratio of tiny numbers) catches that
   // robustly without CI flake.
   it('unknown-user and wrong-password take indistinguishable time', async () => {
-    const timingApp = await makeApp({ HASH_MEMORY_KIB: '19456', HASH_TIME_COST: '2' });
+    // Raise the failure cap so none of the 15 samples become a cheap 429
+    // (which would skip hashing and corrupt the measurement).
+    const timingApp = await makeApp({
+      HASH_MEMORY_KIB: '19456',
+      HASH_TIME_COST: '2',
+      RATE_LIMIT_LOGIN_FAILURES_MAX: '10000',
+    });
     try {
       await timingApp.redis.flushDb();
       await createUser(timingApp, 'realuser');

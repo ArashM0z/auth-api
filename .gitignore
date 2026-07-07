@@ -11,3 +11,4 @@ infra/*.tfstate
 infra/*.tfstate.*
 infra/.terraform.lock.hcl
 bench/results.local.json
+reports/
