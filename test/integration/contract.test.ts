@@ -1,7 +1,7 @@
 /**
- * Contract tests: live responses must validate against the COMMITTED
- * openapi.json. Combined with the CI drift check (regenerate + git diff),
- * this guarantees the published contract can never lie about behavior.
+ * Contract tests: live responses must validate against the committed
+ * openapi.json. With the CI drift check (regenerate + git diff), the
+ * published contract can't drift from what the API actually does.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -50,7 +50,7 @@ describe('responses conform to the committed OpenAPI contract', () => {
     expect(validate(res.json())).toBe(true);
   });
 
-  it('409 duplicate-user problem matches the Problem schema (as application/problem+json)', async () => {
+  it('409 duplicate-user matches the Problem schema', async () => {
     await createUser(app, 'alice');
     const res = await createUser(app, 'alice');
     // The wire Content-Type and the documented media type must agree.
@@ -66,7 +66,7 @@ describe('responses conform to the committed OpenAPI contract', () => {
     expect(validate(res.json())).toBe(true);
   });
 
-  it('401 login problem matches the Problem schema (as application/problem+json)', async () => {
+  it('401 login matches the Problem schema', async () => {
     const res = await login(app, 'ghost', 'wrong but long enough password');
     expect(res.headers['content-type']).toContain('application/problem+json');
     const validate = ajv.compile(

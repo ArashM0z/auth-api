@@ -21,7 +21,7 @@ describe('validatePassword (NIST SP 800-63B-4)', () => {
   });
 
   it('counts Unicode code points, not UTF-16 units', () => {
-    // 15 emoji = 30 UTF-16 code units but exactly 15 code points.
+    // 15 emoji = 30 UTF-16 units but 15 code points.
     expect(rules('🔥'.repeat(15))).toEqual([]);
   });
 
@@ -30,7 +30,7 @@ describe('validatePassword (NIST SP 800-63B-4)', () => {
     expect(rules('1qaz2wsx', { minLength: 8, maxLength: 64 })).toContain('blocklist');
   });
 
-  it('imposes NO composition rules: lowercase-only length is enough', () => {
+  it('no composition rules: a long lowercase-only password is fine', () => {
     expect(rules('justlowercaseletters')).toEqual([]);
   });
 
@@ -40,7 +40,7 @@ describe('validatePassword (NIST SP 800-63B-4)', () => {
     );
   });
 
-  it('applies the username-containment check down to the 3-char minimum', () => {
+  it('checks for the username even at the 3-char minimum', () => {
     // Boundary: a 3-character username must still be screened for.
     expect(rules('my bob is a great passphrase', { ...policy, username: 'bob' })).toContain(
       'contains_username',
@@ -55,7 +55,7 @@ describe('validatePassword (NIST SP 800-63B-4)', () => {
     expect(rules(composed)).toEqual([]);
   });
 
-  it('reports every violation at once (single round trip for clients)', () => {
+  it('reports every violation at once', () => {
     const found = rules('password', { minLength: 15, maxLength: 64 });
     expect(found).toContain('min_length');
     expect(found).toContain('blocklist');
@@ -73,7 +73,7 @@ describe('validatePassword (NIST SP 800-63B-4)', () => {
     );
   });
 
-  it('property: any ≥15-codepoint non-blocklisted password without the username passes', () => {
+  it('property: a long, non-blocklisted password without the username passes', () => {
     fc.assert(
       fc.property(
         fc.string({

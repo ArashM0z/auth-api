@@ -15,7 +15,7 @@ beforeEach(async () => {
 });
 
 describe('POST /v1/users', () => {
-  it('creates a user: 201, Location header, RFC 3339 timestamp, request id echoed', async () => {
+  it('creates a user: 201 with Location, timestamp, and echoed request id', async () => {
     const res = await createUser(app, 'alice');
     expect(res.statusCode).toBe(201);
     expect(res.headers.location).toBe('/v1/users/alice');
@@ -43,7 +43,7 @@ describe('POST /v1/users', () => {
     expect(body.status).toBe(409);
   });
 
-  it('concurrent duplicate registrations cannot race: exactly one 201', async () => {
+  it('concurrent duplicate signups cannot race: only one 201 wins', async () => {
     const attempts = await Promise.all(
       Array.from({ length: 8 }, () => createUser(app, 'race-target')),
     );
@@ -52,7 +52,7 @@ describe('POST /v1/users', () => {
     expect(codes.filter((c) => c === 409)).toHaveLength(7);
   });
 
-  it('echoes a well-formed caller X-Request-Id for correlation', async () => {
+  it('echoes a caller-supplied X-Request-Id', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/v1/users',
@@ -71,7 +71,7 @@ describe('POST /v1/users', () => {
       expect(body.errors.some((e) => e.field === 'password')).toBe(true);
     });
 
-    it('unknown fields are REJECTED, not silently stripped', async () => {
+    it('unknown fields are rejected, not stripped', async () => {
       const res = await post(app, '/v1/users', {
         username: 'alice',
         password: GOOD_PASSWORD,
@@ -80,14 +80,14 @@ describe('POST /v1/users', () => {
       expect(res.statusCode).toBe(400);
     });
 
-    it('non-string password is rejected (no type coercion)', async () => {
+    it('non-string password is rejected, no coercion', async () => {
       const res = await post(app, '/v1/users', { username: 'alice', password: 123456789012345 });
       expect(res.statusCode).toBe(400);
     });
   });
 
   describe('policy (422, domain layer)', () => {
-    it('weak password → WEAK_PASSWORD with every violated rule listed', async () => {
+    it('weak password → WEAK_PASSWORD listing the broken rules', async () => {
       const res = await createUser(app, 'alice', 'password');
       expect(res.statusCode).toBe(422);
       const body = res.json<{ code: string; errors: { rule: string }[] }>();
@@ -103,7 +103,7 @@ describe('POST /v1/users', () => {
       expect(res.json<{ errors: { rule: string }[] }>().errors[0]?.rule).toBe('contains_username');
     });
 
-    it('username that survives the schema but fails normalization → INVALID_USERNAME', async () => {
+    it('username passes the schema but fails normalization → INVALID_USERNAME', async () => {
       const res = await createUser(app, '.alice');
       expect(res.statusCode).toBe(422);
       expect(res.json<{ code: string }>().code).toBe('INVALID_USERNAME');
@@ -111,7 +111,7 @@ describe('POST /v1/users', () => {
   });
 
   describe('protocol edges', () => {
-    it('wrong content type → 415 problem', async () => {
+    it('wrong content type → 415', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/v1/users',
@@ -122,7 +122,7 @@ describe('POST /v1/users', () => {
       expect(res.json<{ code: string }>().code).toBe('UNSUPPORTED_MEDIA_TYPE');
     });
 
-    it('malformed JSON → 400 MALFORMED_BODY problem', async () => {
+    it('malformed JSON → 400 MALFORMED_BODY', async () => {
       const res = await app.inject({
         method: 'POST',
         url: '/v1/users',
@@ -133,7 +133,7 @@ describe('POST /v1/users', () => {
       expect(res.json<{ code: string }>().code).toBe('MALFORMED_BODY');
     });
 
-    it('unknown path → 404 problem+json (not an HTML error page)', async () => {
+    it('unknown path → 404 problem+json, not HTML', async () => {
       const res = await app.inject({ method: 'GET', url: '/v1/nope' });
       expect(res.statusCode).toBe(404);
       expect(res.headers['content-type']).toContain('application/problem+json');

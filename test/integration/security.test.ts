@@ -1,7 +1,7 @@
 /**
- * Attacker's-eye view: each test is an attack that MUST fail. This is the
- * executable version of SECURITY.md — enumeration, timing, injection,
- * mass-assignment, leak, and brute-force channels are all probed here.
+ * Attacker's-eye view: every test here is an attack that should fail.
+ * The executable version of SECURITY.md, covering enumeration, timing,
+ * injection, mass-assignment, leaks, and brute-force.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
@@ -29,7 +29,7 @@ function median(values: number[]): number {
 }
 
 describe('attack: username enumeration', () => {
-  it('response body + status are byte-identical for wrong-password vs unknown-user', async () => {
+  it('wrong password and unknown user give byte-identical body and status', async () => {
     await createUser(app, 'realuser');
     const wrong = await login(app, 'realuser', 'incorrect but long enough passphrase');
     const unknown = await login(app, 'ghostuser', 'incorrect but long enough passphrase');
@@ -43,7 +43,7 @@ describe('attack: username enumeration', () => {
     expect(scrub(unknown.body)).toEqual(scrub(wrong.body));
   });
 
-  it('leaks nothing through distinguishing response headers', async () => {
+  it('headers do not differ between the two cases', async () => {
     await createUser(app, 'realuser');
     const drop = new Set(['date', 'x-request-id', 'ratelimit', 'content-length']);
     const headerSig = (h: Record<string, unknown>) =>
@@ -55,7 +55,7 @@ describe('attack: username enumeration', () => {
     expect(headerSig(unknown.headers)).toEqual(headerSig(wrong.headers));
   });
 
-  it('does not use 404 or 400 to distinguish nonexistent/invalid usernames', async () => {
+  it('never uses 404 or 400 to give away a bad username', async () => {
     await createUser(app, 'realuser');
     expect((await login(app, 'realuser', 'wrong passphrase here ok')).statusCode).toBe(401);
     expect((await login(app, 'ghostuser', 'wrong passphrase here ok')).statusCode).toBe(401);
@@ -65,13 +65,12 @@ describe('attack: username enumeration', () => {
 });
 
 describe('attack: timing side-channel', () => {
-  // Uses realistic Argon2id cost so verification dominates the response time.
-  // The defense's whole point: both failure paths run ONE verification, so
-  // their median latencies differ only by scheduling noise. A skipped dummy
-  // verify would drop the unknown-user path by a whole hash (~tens of ms) —
-  // asserting on the ABSOLUTE gap (not a ratio of tiny numbers) catches that
-  // robustly without CI flake.
-  it('unknown-user and wrong-password take indistinguishable time', async () => {
+  // Uses realistic Argon2id cost so hashing dominates response time.
+  // Both failure paths run one verification, so their median latencies
+  // differ only by scheduling noise. A skipped dummy verify would drop the
+  // unknown-user path by a whole hash (~tens of ms); asserting on the
+  // absolute gap (not a ratio of tiny numbers) catches that without CI flake.
+  it('unknown user and wrong password take about the same time', async () => {
     // Raise the failure cap so none of the 15 samples become a cheap 429
     // (which would skip hashing and corrupt the measurement).
     const timingApp = await makeApp({
@@ -112,7 +111,7 @@ describe('attack: timing side-channel', () => {
 });
 
 describe('attack: credential/hash leakage', () => {
-  it('no response ever contains the password, hash, or PHC prefix', async () => {
+  it('no response leaks the password, hash, or PHC prefix', async () => {
     const created = await createUser(app, 'realuser');
     const ok = await login(app, 'realuser');
     const bad = await login(app, 'realuser', 'wrong passphrase here ok');
@@ -132,7 +131,7 @@ describe('attack: credential/hash leakage', () => {
 });
 
 describe('attack: injection & smuggling', () => {
-  it('username cannot inject Redis key structure (normalization + charset)', async () => {
+  it('username cannot inject Redis key structure', async () => {
     // ':' and spaces are rejected, so "user:admin" style key injection fails.
     for (const evil of ['admin:master', 'a b', 'a\nb', '../etc', 'a*']) {
       const res = await createUser(app, evil);
@@ -140,7 +139,7 @@ describe('attack: injection & smuggling', () => {
     }
   });
 
-  it('mass assignment is blocked: extra fields are rejected, not stored', async () => {
+  it('extra fields are rejected, not stored (no mass assignment)', async () => {
     const res = await post(app, '/v1/users', {
       username: 'realuser',
       password: GOOD_PASSWORD,
@@ -152,7 +151,7 @@ describe('attack: injection & smuggling', () => {
     expect(await app.redis.get('user:realuser')).toBeNull();
   });
 
-  it('a CRLF-injecting X-Request-Id is not reflected; a fresh id is minted', async () => {
+  it('a CRLF-injecting X-Request-Id is dropped and replaced with a fresh one', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/v1/users',
@@ -174,7 +173,7 @@ describe('attack: resource exhaustion', () => {
     expect(res.statusCode).toBe(413);
   });
 
-  it('an over-long password is rejected (never truncated) at 422', async () => {
+  it('over-long password gets 422, never truncated', async () => {
     const res = await createUser(app, 'realuser', 'x'.repeat(500));
     expect(res.statusCode).toBe(422);
     expect(

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PROBLEM_TYPES, ProblemError } from '../../src/problems.js';
 
 describe('problem registry', () => {
-  it('slugs are unique (each problem type has a distinct URI)', () => {
+  it('slugs are unique', () => {
     const slugs = Object.values(PROBLEM_TYPES).map((p) => p.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
   });

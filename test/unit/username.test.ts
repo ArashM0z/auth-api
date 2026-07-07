@@ -37,12 +37,12 @@ describe('normalizeUsername', () => {
     expect(normalizeUsername('  alice  ')).toEqual({ ok: true, value: 'alice' });
   });
 
-  it('property: never throws, and accepted values are idempotent under re-normalization', () => {
+  it('property: never throws, and normalizing an accepted value again is a no-op', () => {
     fc.assert(
       fc.property(fc.string({ unit: 'binary', maxLength: 128 }), (raw) => {
         const first = normalizeUsername(raw);
         if (first.ok) {
-          // Normalizing an already-normalized name must be a fixed point —
+          // Normalizing an already-normalized name must be a fixed point,
           // otherwise lookups and stored keys could disagree.
           const second = normalizeUsername(first.value);
           expect(second).toEqual(first);

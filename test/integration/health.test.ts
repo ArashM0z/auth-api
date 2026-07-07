@@ -24,7 +24,7 @@ describe('probes', () => {
     expect(res.json()).toEqual({ status: 'ready' });
   });
 
-  it('GET /readyz → 503 problem when Redis is unreachable', async () => {
+  it('GET /readyz → 503 when Redis is unreachable', async () => {
     const doomed = await makeApp();
     doomed.redis.destroy(); // force-close the connection
     const res = await doomed.inject({ method: 'GET', url: '/readyz' });

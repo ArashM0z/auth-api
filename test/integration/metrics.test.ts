@@ -15,7 +15,7 @@ beforeEach(async () => {
 });
 
 describe('GET /metrics (Prometheus)', () => {
-  it('exposes the Prometheus exposition format, exempt from rate limiting', async () => {
+  it('exposes Prometheus metrics, exempt from rate limiting', async () => {
     const limited = await makeApp({ RATE_LIMIT_IP_MAX: '1' });
     try {
       await limited.redis.flushDb();
@@ -30,7 +30,7 @@ describe('GET /metrics (Prometheus)', () => {
     }
   });
 
-  it('reflects domain events: created users, auth outcomes, queue gauges', async () => {
+  it('counts users created, auth outcomes, and queue gauges', async () => {
     await createUser(app, 'realuser');
     await login(app, 'realuser');
     await login(app, 'realuser', 'wrong passphrase here ok');
