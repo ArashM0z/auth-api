@@ -1,0 +1,9 @@
+# Spectral — lints the generated OpenAPI document in CI so the API contract
+# itself is held to a quality bar, not just the code.
+extends: ['spectral:oas']
+rules:
+  operation-description: warn
+  operation-tags: error
+  operation-operationId: error
+  info-contact: off
+  oas3-api-servers: warn

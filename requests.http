@@ -1,0 +1,81 @@
+### VS Code REST Client / JetBrains HTTP file — click "Send Request" to try the API.
+### Start the stack first: docker compose up --build
+
+# ---- happy path -------------------------------------------------------------
+
+### Create a user (201 Created + Location header)
+POST http://localhost:3000/v1/users
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "correct horse battery staple"
+}
+
+### Authenticate (200 OK)
+POST http://localhost:3000/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "correct horse battery staple"
+}
+
+# ---- error surface (all RFC 9457 application/problem+json) ------------------
+
+### Duplicate username → 409 USERNAME_TAKEN (case-insensitive!)
+POST http://localhost:3000/v1/users
+Content-Type: application/json
+
+{
+  "username": "ALICE",
+  "password": "another perfectly fine passphrase"
+}
+
+### Weak password → 422 WEAK_PASSWORD with every violated rule
+POST http://localhost:3000/v1/users
+Content-Type: application/json
+
+{
+  "username": "bob",
+  "password": "password"
+}
+
+### Wrong password → 401 INVALID_CREDENTIALS + RateLimit headers
+POST http://localhost:3000/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "password": "wrong password entirely here"
+}
+
+### Unknown user → the SAME 401, same timing (try to tell them apart!)
+POST http://localhost:3000/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "who-is-this",
+  "password": "wrong password entirely here"
+}
+
+### Unknown field → 400 (rejected, never silently stripped)
+POST http://localhost:3000/v1/users
+Content-Type: application/json
+
+{
+  "username": "carol",
+  "password": "a perfectly acceptable passphrase",
+  "admin": true
+}
+
+# ---- operations --------------------------------------------------------------
+
+### Liveness
+GET http://localhost:3000/healthz
+
+### Readiness (checks Redis)
+GET http://localhost:3000/readyz
+
+### OpenAPI document
+GET http://localhost:3000/docs/json

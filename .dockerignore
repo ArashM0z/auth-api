@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+.git
+.github
+.env
+*.md
+docs
+infra
+client
+bench
+test
+.vscode
+.idea
+openapi.json
+requests.http

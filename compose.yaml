@@ -1,0 +1,34 @@
+# One-command production-like run for reviewers: `docker compose up --build`
+# API on http://localhost:3000 — interactive docs at http://localhost:3000/docs
+# For hot-reload development use: docker compose -f compose.yaml -f compose.dev.yaml up --build
+services:
+  redis:
+    image: redis:8-alpine
+    # Redis is the system of record here, so durability is configured, not
+    # defaulted: AOF with everysec bounds crash loss to ~1s of writes.
+    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    # Deliberately NOT published to the host: the API is Redis's only client.
+    # (Add `ports: ["6379:6379"]` temporarily if you want to inspect it.)
+
+  api:
+    build:
+      context: .
+      target: prod
+    environment:
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: info
+    ports:
+      - '3000:3000'
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:
