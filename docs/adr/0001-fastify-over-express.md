@@ -15,11 +15,11 @@ Fastify 5.
 ## Rationale
 
 - **Validation is core, not middleware.** Fastify compiles a JSON Schema per
-  route (AJV) for body/query/params — the security-critical input gate is
+  route (AJV) for body/query/params, so the security-critical input gate is
   declarative and cannot be forgotten on a route. Express ships none.
 - **Response-schema serialization** (fast-json-stringify) whitelists output
   fields per status code. For an auth service this is a structural guarantee
-  that a password hash can never leak into a response — stronger than
+  that a password hash can never leak into a response, which is stronger than
   convention or review.
 - **Schemas triple as the contract**: the same TypeBox objects drive runtime
   validation, compile-time types (`@fastify/type-provider-typebox`), and the

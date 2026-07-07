@@ -31,7 +31,7 @@ OWASP Password Storage Cheat Sheet minimum configuration: **m=19456 KiB
 
 ## Consequences
 
-- Native module — mitigated by prebuilt binaries for all mainstream
+- Native module, mitigated by prebuilt binaries for all mainstream
   platforms and a Docker build that compiles nothing.
 - Memory cost × concurrency must be bounded: see the `p-limit` hashing gate
   (worst case = `HASH_MAX_CONCURRENCY` × 19 MiB).

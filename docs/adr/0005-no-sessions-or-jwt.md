@@ -6,7 +6,7 @@
 
 The brief asks for exactly two capabilities: create a login, authenticate a
 login. Roughly half the public submissions to similar challenges bolt on
-JWTs — and are then gradeable on token expiry, revocation, secret rotation,
+JWTs, and are then gradeable on token expiry, revocation, secret rotation,
 and cookie hygiene they never implemented.
 
 ## Decision
@@ -27,5 +27,5 @@ and cookie hygiene they never implemented.
 
 ## Consequences
 
-Callers needing "stay logged in" semantics must wait for that iteration —
-by design, not omission.
+Callers needing "stay logged in" semantics must wait for that iteration;
+that's by design, not an omission.

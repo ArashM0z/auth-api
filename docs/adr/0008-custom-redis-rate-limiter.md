@@ -11,8 +11,8 @@ reach is `@fastify/rate-limit`.
 ## Decision
 
 A ~90-line `RedisRateLimiter` (fixed windows; atomic
-`INCR` + `EXPIRE NX` + `TTL` in one `MULTI`) with three verbs — `hit`,
-`peek`, `clear` — plus a helper emitting the draft-IETF rate-limit headers.
+`INCR` + `EXPIRE NX` + `TTL` in one `MULTI`) with three verbs (`hit`,
+`peek`, `clear`), plus a helper emitting the draft-IETF rate-limit headers.
 
 ## Rationale
 
@@ -20,12 +20,12 @@ A ~90-line `RedisRateLimiter` (fixed windows; atomic
   any horizontal scale. (In-memory limiters silently multiply thresholds by
   the instance count.)
 - The per-username failure window needs `peek` (gate without consuming) and
-  `clear` (success resets) — semantics plugins don't expose cleanly.
+  `clear` (success resets), semantics plugins don't expose cleanly.
 - `@fastify/rate-limit`'s Redis store is built around ioredis; this project
   standardizes on the official `node-redis` client (ioredis's own README
   directs new projects there).
 - Emits `RateLimit` / `RateLimit-Policy` structured fields per
-  **draft-ietf-httpapi-ratelimit-headers-11** (still an Internet-Draft —
+  **draft-ietf-httpapi-ratelimit-headers-11** (still an Internet-Draft,
   noted in the README) + `Retry-After` on 429, instead of legacy
   `X-RateLimit-*`.
 - Failure counters key on the _submitted_ username (existent or not), so the
@@ -33,6 +33,6 @@ A ~90-line `RedisRateLimiter` (fixed windows; atomic
 
 ## Consequences
 
-Fixed windows allow ≤2× burst at window edges — acceptable at these
+Fixed windows allow ≤2× burst at window edges, acceptable at these
 thresholds; a sliding-log or token bucket is a documented future refinement.
 90 lines of owned code carry their own tests (unit + integration).

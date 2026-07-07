@@ -1,7 +1,7 @@
 # Infrastructure (OpenTofu / Terraform, AWS)
 
 Demonstration-quality IaC for running the auth API on AWS in `ca-central-1`.
-It is **validated statically, never applied** — see
+It is **validated statically, never applied**; see
 [Why this is not applied](#why-this-is-not-applied).
 
 ## What it provisions
@@ -19,11 +19,11 @@ flowchart LR
 ```
 
 Deployed per environment (`dev` / `staging` / `prod`) with env-prefixed
-resource names and per-environment state — see
+resource names and per-environment state; see
 [../docs/CONFIGURATION.md](../docs/CONFIGURATION.md). **Secrets** (the Redis
 auth token and full `rediss://` URL) live in AWS Secrets Manager; **non-secret
 config** lives in SSM Parameter Store; the ECS task's execution role is scoped
-to exactly those ARNs.
+to just those ARNs.
 
 Traffic is admitted tier-to-tier by security-group reference only:
 `internet → alb SG (:80) → app SG (:3000) → redis SG (:6379)`. The ALB
@@ -39,7 +39,7 @@ egress) adds **~USD 65+/month** of NAT before any traffic. Here the tasks
 get public IPs for egress (ECR pulls, CloudWatch, SSM) but their security
 group only admits ingress **from the ALB**, so they are not reachable from
 the internet. Production would use private subnets with NAT gateways or VPC
-endpoints — the trade-off is called out inline in `network.tf`.
+endpoints; the trade-off is called out inline in `network.tf`.
 
 Rough steady-state cost if applied: ALB ~$22 + 2× Fargate task ~$25 +
 cache.t4g.micro ~$11 + Container Insights/logs a few dollars ≈
@@ -69,9 +69,9 @@ the git SHA) and deploys are `tofu apply -var app_image_tag=<tag>`.
 ## Why this is not applied
 
 This is a take-home: the deliverable is reviewable IaC, not a running
-(billable) environment. Everything here is verified statically — it must
+(billable) environment. Everything here is verified statically. It must
 pass `tofu fmt -check`, `tofu validate` (with providers resolved), and
-`tflint` cleanly — which proves syntax, types, references, and a large
+`tflint` cleanly, which proves syntax, types, references, and a large
 class of AWS-specific mistakes without creating a single resource.
 
 ## CI checks (`.github/workflows/iac.yml`)
@@ -93,7 +93,7 @@ its operational weight when you are running a _fleet_ of services with complex
 inter-service networking, custom controllers, or multi-cloud portability
 requirements. This is a **single, stateless, two-endpoint service**; on that
 shape, ECS Fargate delivers the same "containers behind a load balancer, auto-
-scaled, rolling deploys" outcome with a fraction of the operational surface —
+scaled, rolling deploys" outcome with a fraction of the operational surface:
 no control plane to run, patch, and secure, and (relevant to Lendesk's stack)
 it lives natively in the AWS + Terraform world the rest of this repo targets.
 
@@ -110,6 +110,6 @@ deployment target is a swap; the application contract is unchanged.
 
 The demo uses a `local` backend so it is runnable with zero setup.
 Production would use the S3 backend with encryption and state locking
-(S3-native `use_lockfile`, or a DynamoDB table on older runtimes) — the
-exact block is spelled out in `versions.tf`. State matters here because the
+(S3-native `use_lockfile`, or a DynamoDB table on older runtimes); the
+block is spelled out in `versions.tf`. State matters here because the
 generated Redis AUTH token lives in it.

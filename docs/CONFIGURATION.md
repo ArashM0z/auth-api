@@ -1,7 +1,7 @@
 # Configuration & Secrets
 
-How this service is configured, everywhere it runs — and, crucially, where the
-line between **config** and **secrets** is drawn.
+How this service is configured, everywhere it runs, and where the line
+between **config** and **secrets** is drawn.
 
 ## The one principle
 
@@ -34,7 +34,7 @@ about:
 | `HOST`, `PORT`                                  | static infra fact                  | `.env`                                     | ECS task definition (`environment`)              |
 | `HASH_*`, `RATE_LIMIT_*`, `PASSWORD_MAX_LENGTH` | config (app defaults)              | `.env` (optional)                          | app defaults (add SSM params to override)        |
 
-In every case the app only ever sees an environment variable — it has no idea
+In every case the app only ever sees an environment variable; it has no idea
 whether that value came from a file, Parameter Store, or Secrets Manager. That
 indirection is what lets the same image run unchanged from a laptop to prod.
 
@@ -49,7 +49,7 @@ docker compose up         # or: npm run dev
 
 - `.env` is **git-ignored** (see `.gitignore`) and never committed. `.env.example`
   is the committed, non-secret template.
-- `REDIS_URL` locally is `redis://localhost:6379` — a local Redis with **no**
+- `REDIS_URL` locally is `redis://localhost:6379`, a local Redis with **no**
   AUTH token and **no** TLS. There is no real secret on a developer machine, so
   a plaintext file is the right tool; reaching for a secret manager here would
   be theatre.
@@ -95,7 +95,7 @@ PASSWORD_MIN_LENGTH <- SSM Parameter     arn:...:parameter/auth-api/prod/config/
 ```
 
 The resolved values never appear in the task definition, the console, or
-`describe-task-definition` output — only the ARNs do.
+`describe-task-definition` output; only the ARNs do.
 
 ### Where each value comes from, per environment
 
@@ -144,7 +144,7 @@ tofu apply -var-file=environments/staging.tfvars
 tofu apply -var-file=environments/prod.tfvars
 ```
 
-The `environment` variable has **no default** on purpose — an environment must
+The `environment` variable has **no default** on purpose: an environment must
 be chosen explicitly, and `contains(["dev","staging","prod"], ...)` validation
 rejects anything else (asserted in
 `infra/tests/environments.tftest.hcl::rejects_invalid_environment`).
@@ -158,14 +158,14 @@ rejects anything else (asserted in
 | `log_level`           | debug           | info            | info             |
 
 ¹ prod may justify a memory-optimised node (e.g. `cache.r7g.large`) plus
-`num_cache_clusters >= 2` with Multi-AZ automatic failover — see `infra/redis.tf`.
+`num_cache_clusters >= 2` with Multi-AZ automatic failover; see `infra/redis.tf`.
 
 ## Per-environment isolation
 
 Two layers, both important (full detail in the backend comment in
 `infra/versions.tf`):
 
-1. **State isolation.** Each environment gets its own state file — a distinct
+1. **State isolation.** Each environment gets its own state file: a distinct
    S3 backend `key` wired at `init` time
    (`-backend-config="key=auth-api/<env>/terraform.tfstate"`), or workspaces as
    a weaker fallback. The demo uses `local` state.
@@ -178,7 +178,7 @@ Two layers, both important (full detail in the backend comment in
 
 ## Least privilege: what can read the secrets
 
-The ECS **execution** role (`infra/ecs.tf`) is granted exactly what the
+The ECS **execution** role (`infra/ecs.tf`) is granted only what the
 container injects and nothing more:
 
 - `secretsmanager:GetSecretValue` on the **`redis-url` secret ARN only** — not
@@ -192,7 +192,7 @@ whose key policies already permit use through those services, so no explicit
 `kms:Decrypt` statement scoped to that key ARN.
 
 The **task** role (what the application itself can do) has **no policies at
-all** — the app only talks to Redis, so a compromised app process holds no
+all**: the app only talks to Redis, so a compromised app process holds no
 useful AWS credentials.
 
 ## Secret rotation
