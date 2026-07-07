@@ -1,11 +1,11 @@
 /**
- * OpenTelemetry tracing — opt-in and side-effect-free unless configured.
+ * OpenTelemetry tracing. Opt-in and side-effect-free unless configured.
  * Enabled when OTEL_EXPORTER_OTLP_ENDPOINT is set (or OTEL_ENABLED=true), so
- * `docker compose up` and the test suite need no collector. Import and call
- * startTracing() FIRST in the process entrypoint, before the app is built.
+ * `docker compose up` and the test suite need no collector. Call
+ * startTracing() first in the process entrypoint, before the app is built.
  *
  * Fastify spans come from @fastify/otel (registerOnInitialization patches
- * every Fastify instance once the SDK starts) — no ESM loader flag required.
+ * every Fastify instance once the SDK starts); no ESM loader flag required.
  */
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
@@ -19,7 +19,7 @@ export function startTracing(env: NodeJS.ProcessEnv = process.env): NodeSDK | un
 
   const fastifyInstrumentation = new FastifyOtelInstrumentation({
     registerOnInitialization: true,
-    // Health/metrics probes generate no spans — keep traces signal-heavy.
+    // Health/metrics probes generate no spans; keeps traces signal-heavy.
     ignorePaths: (route) => ['/healthz', '/readyz', '/metrics'].includes(route.url),
   });
 

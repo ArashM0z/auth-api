@@ -1,7 +1,7 @@
 /**
- * All configuration is read and validated once at boot. A malformed value
- * fails the process immediately with the offending variable named, instead
- * of surfacing later as a runtime error mid-request.
+ * Config is read and validated once at boot. A bad value fails the process
+ * right away with the offending variable named, instead of surfacing as a
+ * runtime error mid-request later.
  */
 export interface AppConfig {
   readonly host: string;

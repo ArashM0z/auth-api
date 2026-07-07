@@ -6,8 +6,8 @@ let cached: ReadonlySet<string> | undefined;
 
 /**
  * Top-10k common passwords (SecLists, MIT). NIST SP 800-63B-4 requires
- * screening candidate passwords against commonly used / compromised values.
- * Loaded once, lazily; ~10k entries, lowercase.
+ * screening candidate passwords against commonly used or compromised values.
+ * Loaded once, lazily; ~10k lowercase entries.
  */
 export function commonPasswords(): ReadonlySet<string> {
   if (cached === undefined) {

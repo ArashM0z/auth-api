@@ -1,9 +1,9 @@
 import { createClient } from 'redis';
 import type { FastifyInstance } from 'fastify';
 
-// Infer the *instantiated* client type from a concrete call signature —
-// the generic ReturnType<typeof createClient> does not unify with created
-// clients under exactOptionalPropertyTypes.
+// Infer the instantiated client type from a concrete call signature. The
+// generic ReturnType<typeof createClient> doesn't unify with created clients
+// under exactOptionalPropertyTypes.
 const clientFactory = (url: string) => createClient({ url });
 export type AppRedis = ReturnType<typeof clientFactory>;
 

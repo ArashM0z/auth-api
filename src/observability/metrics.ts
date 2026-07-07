@@ -57,9 +57,9 @@ export function createMetrics(): Metrics {
 }
 
 /**
- * Gauges the Argon2id hashing gate (active + queued). Registered with a
- * collect callback so the depth is read at scrape time — this is the signal
- * that tells you to scale out before logins start queueing.
+ * Gauges the Argon2id hashing gate (active + queued). Uses a collect callback
+ * so depth is read at scrape time; this is the signal to scale out before
+ * logins start queueing.
  */
 export function registerHashQueueGauge(metrics: Metrics, probe: HashQueueProbe): void {
   new Gauge({

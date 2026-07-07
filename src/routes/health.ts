@@ -21,10 +21,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 /**
- * Unversioned by design: probe paths are a contract with infrastructure
+ * Unversioned by design. Probe paths are a contract with infrastructure
  * (load balancers, orchestrators), not with API consumers, and the two
  * evolve independently. Excluded from IP rate limiting so a busy prober
- * can never mark a healthy instance dead.
+ * can't mark a healthy instance dead.
  */
 export function registerHealthRoutes(instance: FastifyInstance, redis: AppRedis): void {
   const app = instance.withTypeProvider<TypeBoxTypeProvider>();

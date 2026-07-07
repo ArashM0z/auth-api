@@ -14,9 +14,9 @@ export interface WindowState {
 }
 
 /**
- * Fixed-window counters in Redis. Because state lives in Redis (not process
- * memory), limits hold across horizontally scaled replicas — an in-memory
- * limiter silently multiplies its threshold by the instance count.
+ * Fixed-window counters in Redis. State lives in Redis, not process memory,
+ * so limits hold across horizontally scaled replicas; an in-memory limiter
+ * multiplies its threshold by the instance count.
  */
 export class RedisRateLimiter {
   private readonly redis: AppRedis;
@@ -35,8 +35,8 @@ export class RedisRateLimiter {
    */
   async hit(policy: WindowPolicy, subject: string): Promise<WindowState> {
     const key = this.key(policy, subject);
-    // INCR + EXPIRE NX + TTL execute atomically inside MULTI: the expiry is
-    // set exactly once per window, by whichever request created the key.
+    // MULTI runs INCR + EXPIRE NX + TTL atomically, so the window's expiry is
+    // set once, by whoever creates the key.
     const replies = await this.redis
       .multi()
       .incr(key)
@@ -60,7 +60,7 @@ export class RedisRateLimiter {
 
 /**
  * draft-ietf-httpapi-ratelimit-headers-11 structured fields (Internet-Draft,
- * not yet an RFC — see README). `r` = remaining quota, `t` = seconds to
+ * not yet an RFC; see README). `r` = remaining quota, `t` = seconds to
  * reset, `q` = quota, `w` = window seconds.
  */
 export function rateLimitHeaders(policy: WindowPolicy, state: WindowState): Record<string, string> {

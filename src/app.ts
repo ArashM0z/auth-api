@@ -56,8 +56,8 @@ export async function buildApp(
   const app = fastify({
     logger: {
       level: config.logLevel,
-      // Defense in depth: request bodies are never logged, but if any log
-      // statement ever includes one, password fields are censored.
+      // Bodies aren't logged, but redact password fields anyway in case a
+      // log line ever includes one.
       redact: {
         paths: ['password', '*.password', '*.*.password'],
         censor: '[REDACTED]',
@@ -66,17 +66,17 @@ export async function buildApp(
     trustProxy: config.trustProxy,
     bodyLimit: 16 * 1024,
     genReqId: (raw) => {
-      // Accept the caller's correlation id when it is well-formed;
-      // otherwise mint one. Echoed on every response as X-Request-Id.
+      // Use the caller's correlation id if it's well-formed, otherwise
+      // mint one. Echoed back on every response as X-Request-Id.
       const header = raw.headers['x-request-id'];
       return typeof header === 'string' && REQUEST_ID_PATTERN.test(header) ? header : randomUUID();
     },
     ajv: {
       customOptions: {
-        // Fastify's defaults COERCE types and STRIP unknown fields. For a
-        // security API we want strictness instead: wrong types are errors
-        // and unknown fields are rejected (additionalProperties: false),
-        // never silently dropped.
+        // Fastify's defaults coerce types and strip unknown fields. For a
+        // security API we want the opposite: wrong types are errors and
+        // unknown fields get rejected (additionalProperties: false) rather
+        // than silently dropped.
         coerceTypes: false,
         removeAdditional: false,
         allErrors: true,
@@ -84,15 +84,15 @@ export async function buildApp(
     },
   });
 
-  // JSON-only API: Fastify ships a built-in text/plain parser; with it, a
-  // text body would be parsed and then fail schema validation as a 400.
-  // Removing it makes any non-JSON Content-Type a proper 415.
+  // JSON-only API. Fastify ships a built-in text/plain parser; with it, a
+  // text body parses and then fails schema validation as a 400. Removing it
+  // makes any non-JSON Content-Type a proper 415.
   app.removeContentTypeParser('text/plain');
 
   // ---- security & resilience -------------------------------------------
   await app.register(helmet, {
-    // The API itself serves only JSON (CSP is a non-event for it); the CSP
-    // would break the self-hosted Scalar API reference at /docs. Documented tradeoff.
+    // The API serves only JSON, so a CSP buys it nothing, and it would break
+    // the self-hosted Scalar reference at /docs. Deliberate tradeoff.
     contentSecurityPolicy: false,
   });
 
@@ -116,7 +116,7 @@ export async function buildApp(
   // ---- OpenAPI ----------------------------------------------------------
   await app.register(swagger, {
     openapi: {
-      // 3.0.3: @fastify/swagger's officially documented output level.
+      // 3.0.3 is the output level @fastify/swagger officially documents.
       openapi: '3.0.3',
       info: {
         title: 'Authentication API',
@@ -133,8 +133,8 @@ export async function buildApp(
       ],
     },
   });
-  // Scalar renders the same OpenAPI document as a modern, searchable API
-  // reference with a built-in request playground (successor to Swagger UI).
+  // Scalar renders the same OpenAPI document as a searchable API reference
+  // with a built-in request playground (a Swagger UI successor).
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Scalar's plugin export is loosely typed
   await app.register(scalarApiReference, {
     routePrefix: '/docs',
@@ -161,8 +161,8 @@ export async function buildApp(
   });
 
   app.addHook('onResponse', async (request, reply) => {
-    // routeOptions.url is the template ("/v1/users"), so metric cardinality
-    // stays bounded — never the raw path with its variable segments.
+    // routeOptions.url is the template ("/v1/users"), not the raw path with
+    // its variable segments, so metric cardinality stays bounded.
     const route = request.routeOptions.url ?? 'unmatched';
     metrics.httpRequests.inc({
       method: request.method,

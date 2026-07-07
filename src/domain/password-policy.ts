@@ -8,18 +8,18 @@ export interface PolicyViolation {
 export interface PasswordPolicyOptions {
   readonly minLength: number;
   readonly maxLength: number;
-  /** Normalized username, when known — passwords containing it are rejected. */
+  /** Normalized username, when known; passwords containing it are rejected. */
   readonly username?: string;
 }
 
 /**
  * NIST SP 800-63B-4 (final, 2025-07-31) password policy:
  *  - length is the only strength rule (default min 15 for single-factor use);
- *  - NO composition rules (no "one uppercase, one symbol" — they reduce
+ *  - no composition rules (no "one uppercase, one symbol"; those reduce
  *    real-world strength);
  *  - every Unicode code point counts as one character;
  *  - candidate passwords are screened against a common-password blocklist;
- *  - over-long passwords are REJECTED, never silently truncated.
+ *  - over-long passwords are rejected, never silently truncated.
  * Returns all violations so clients can fix everything in one round trip.
  */
 export function validatePassword(
@@ -28,8 +28,8 @@ export function validatePassword(
 ): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
   const normalized = password.normalize('NFC');
-  // NIST 800-63B-4 counts each Unicode CODE POINT as one character — that is
-  // exactly what string spread yields (grapheme segmentation would differ).
+  // NIST 800-63B-4 counts each Unicode code point as one character, which is
+  // what string spread yields (grapheme segmentation would differ).
   // eslint-disable-next-line @typescript-eslint/no-misused-spread
   const codePoints = [...normalized].length;
 

@@ -10,8 +10,8 @@ const tracing = startTracing();
 const config = loadConfig();
 const app = await buildApp(config);
 
-// SIGTERM/SIGINT drain in-flight requests (up to 10s) before exit — required
-// for zero-downtime rolling deploys behind a load balancer.
+// SIGTERM/SIGINT drain in-flight requests (up to 10s) before exit. Needed for
+// zero-downtime rolling deploys behind a load balancer.
 closeWithGrace({ delay: 10_000 }, async ({ err }) => {
   if (err !== undefined) {
     app.log.error({ err }, 'shutting down after fatal error');

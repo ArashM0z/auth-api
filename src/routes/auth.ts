@@ -13,9 +13,9 @@ import { audit } from '../audit.js';
 import type { Metrics } from '../observability/metrics.js';
 
 /**
- * The login schema is deliberately loose (any non-empty strings): a
- * malformed username cannot exist, so it must produce the SAME 401 as a
- * wrong password — a 400 here would be an account-enumeration oracle.
+ * The login schema is deliberately loose (any non-empty strings). A malformed
+ * username can't exist, so it has to produce the same 401 as a wrong password;
+ * a 400 here would be an account-enumeration oracle.
  */
 const LoginBody = Type.Object(
   {
@@ -73,19 +73,18 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
     async (request, reply) => {
       const { username: rawUsername, password } = request.body;
       const normalized = normalizeUsername(rawUsername);
-      // Rate-limit failures for ANY submitted username string (existent or
-      // not) so the limiter itself cannot be used to probe which usernames
-      // are real.
+      // Rate-limit failures for any submitted username string, real or not,
+      // so the limiter can't be used to probe which usernames exist.
       const subject = normalized.ok
         ? normalized.value
         : rawUsername.normalize('NFC').trim().toLowerCase().slice(0, 64);
 
-      // Atomically CONSUME one slot from the failure window BEFORE the
-      // expensive Argon2id verify. A read-only check here would be a TOCTOU
-      // race: a concurrent burst of guesses could all observe count<max and
-      // slip past the cap while their verifies run. Redis INCR serializes
-      // them, so at most `max` guesses per window ever reach verification.
-      // The window is cleared on success, so legitimate users are unaffected.
+      // Consume one slot from the failure window before the expensive
+      // Argon2id verify. A read-only check here would be a TOCTOU race: a
+      // concurrent burst of guesses could all see count<max and slip past the
+      // cap while their verifies run. Redis INCR serializes them, so at most
+      // `max` guesses per window reach verification. The window clears on
+      // success, so legitimate users aren't affected.
       const gate = await deps.limiter.hit(failurePolicy, subject);
       if (!gate.allowed) {
         deps.metrics.rateLimited.inc({ scope: 'username' });
@@ -116,7 +115,7 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
       }
 
       if (verifiedUsername === undefined) {
-        // The slot was already consumed at the gate above — do not double-count.
+        // The slot was already consumed at the gate above, so don't double-count.
         deps.metrics.authAttempts.inc({ outcome: 'invalid' });
         audit(request.log, 'auth.failure', { username: subject, ip: request.ip });
         throw new ProblemError('INVALID_CREDENTIALS', {

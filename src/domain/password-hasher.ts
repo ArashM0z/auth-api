@@ -12,18 +12,18 @@ export interface HasherOptions {
 }
 
 /**
- * Argon2id hashing with two production concerns most implementations miss:
+ * Argon2id hashing, with two production concerns:
  *
- * 1. Concurrency cap: every in-flight Argon2id call reserves `memoryKib`
+ * 1. Concurrency cap. Each in-flight Argon2id call reserves `memoryKib`
  *    (19 MiB at OWASP minimums). Unbounded concurrency turns a burst of
- *    login attempts into a self-inflicted memory DoS, so all hash/verify
- *    work funnels through a p-limit gate. Worst-case hashing memory is
+ *    logins into a self-inflicted memory DoS, so all hash/verify work goes
+ *    through a p-limit gate. Worst-case hashing memory is
  *    maxConcurrency * memoryKib.
  *
- * 2. Timing equalization: when a username does not exist we still verify
- *    the supplied password against a boot-time dummy hash, so "unknown
- *    user" and "wrong password" cost the same wall-clock time and cannot
- *    be told apart by measurement.
+ * 2. Timing equalization. When a username doesn't exist we still verify the
+ *    supplied password against a boot-time dummy hash, so "unknown user" and
+ *    "wrong password" cost the same wall-clock time and can't be told apart
+ *    by measurement.
  */
 export class PasswordHasher {
   private readonly limit: LimitFunction;
@@ -45,12 +45,12 @@ export class PasswordHasher {
     this.dummyHash = await this.hash(`dummy-${randomUUID()}`);
   }
 
-  /** Hashes currently executing — exposed for the queue-depth gauge. */
+  /** Hashes currently executing; exposed for the queue-depth gauge. */
   activeCount(): number {
     return this.limit.activeCount;
   }
 
-  /** Hashes waiting for a concurrency slot — the scale-out signal. */
+  /** Hashes waiting for a concurrency slot; the scale-out signal. */
   pendingCount(): number {
     return this.limit.pendingCount;
   }
@@ -73,8 +73,8 @@ export class PasswordHasher {
   }
 
   /**
-   * True when the stored hash was produced with weaker parameters than the
-   * current policy — the login handler then transparently re-hashes.
+   * True when the stored hash used weaker parameters than the current policy;
+   * the login handler then re-hashes transparently.
    */
   needsRehash(hash: PasswordHash): boolean {
     return argon2.needsRehash(hash, this.options);

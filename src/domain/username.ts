@@ -4,9 +4,9 @@ export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 32;
 
 /**
- * Lowercase ASCII letters/digits with ., _, - allowed in the middle.
- * Applied AFTER NFC normalization + lowercasing, so visually confusable
- * Unicode (homoglyphs, combining marks) can never form a distinct account.
+ * Lowercase ASCII letters/digits, with ., _, - allowed in the middle.
+ * Applied after NFC normalization and lowercasing, so confusable Unicode
+ * (homoglyphs, combining marks) can't form a distinct account.
  */
 const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/;
 

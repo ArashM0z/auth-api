@@ -33,11 +33,11 @@ export class UserService {
   }
 
   /**
-   * Uniqueness is enforced by Redis itself: SET ... NX atomically creates
-   * the key only if absent, so two concurrent registrations of the same
-   * username cannot both succeed (no check-then-set race). Hashing happens
-   * BEFORE the write for both outcomes, so a "taken" response costs the
-   * same time as a successful one — no timing oracle on registration.
+   * Redis enforces uniqueness: SET ... NX creates the key only if absent, so
+   * two concurrent registrations of the same username can't both succeed (no
+   * check-then-set race). Hashing happens before the write in both cases, so
+   * a "taken" response costs the same as a successful one; no timing oracle
+   * on registration.
    */
   async create(username: NormalizedUsername, password: string): Promise<CreateResult> {
     const passwordHash = await this.hasher.hash(password);
@@ -51,13 +51,13 @@ export class UserService {
   }
 
   /**
-   * Unknown-user and wrong-password paths are indistinguishable: both
-   * consume one Argon2id verification (a dummy one when the user does not
-   * exist) and both surface as the same 401 upstream.
+   * Unknown-user and wrong-password paths are indistinguishable: both run one
+   * Argon2id verification (a dummy one when the user doesn't exist) and both
+   * surface as the same 401 upstream.
    *
-   * On success, if the stored hash predates current Argon2id parameters it
-   * is transparently re-hashed (the only moment the plaintext is available)
-   * — the user base upgrades itself one login at a time.
+   * On success, if the stored hash predates the current Argon2id parameters
+   * it's re-hashed (login is the only moment the plaintext is available), so
+   * the user base upgrades itself one login at a time.
    */
   async verifyCredentials(username: NormalizedUsername, password: string): Promise<VerifyResult> {
     const raw = await this.redis.get(userKey(username));
@@ -77,8 +77,8 @@ export class UserService {
         passwordHash: await this.hasher.hash(password),
         passwordRehashedAt: new Date().toISOString(),
       };
-      // XX: only update an existing key; if the user vanished mid-flight the
-      // rehash is silently dropped rather than resurrecting the account.
+      // XX: only update an existing key. If the user vanished mid-flight the
+      // rehash is dropped rather than resurrecting the account.
       await this.redis.set(userKey(username), JSON.stringify(upgraded), { condition: 'XX' });
       rehashed = true;
     }
