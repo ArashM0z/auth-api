@@ -56,7 +56,7 @@ export function registerUserRoutes(instance: FastifyInstance, deps: UserRouteDep
     {
       schema: {
         operationId: 'createUser',
-        tags: ['users'],
+        tags: ['Users'],
         summary: 'Create a new login',
         description:
           'Creates a user with a unique (case-insensitive) username. Uniqueness is enforced atomically in Redis (SET NX) — concurrent duplicate registrations cannot race.',

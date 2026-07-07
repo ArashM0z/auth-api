@@ -120,16 +120,31 @@ export async function buildApp(
       openapi: '3.0.3',
       info: {
         title: 'Authentication API',
-        description:
-          'Internal service for creating and verifying user credentials. ' +
-          'All errors are RFC 9457 Problem Details (application/problem+json).',
+        description: [
+          'Internal service for other backend systems to **create logins** and **verify credentials**. No tokens are issued — login only confirms a username/password pair.',
+          '',
+          '- **Errors** use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`) with a stable machine-readable `code` and a `requestId` for correlation.',
+          '- **Passwords** follow NIST SP 800-63B-4 (min 15 chars, common-password blocklist, no composition rules) and are stored with Argon2id.',
+          '- **Failed logins** are rate-limited per username, and a wrong password is indistinguishable from an unknown user — same status, body, and timing.',
+        ].join('\n'),
         version: '1.0.0',
       },
       servers: [{ url: 'http://localhost:3000', description: 'local' }],
       tags: [
-        { name: 'users', description: 'User creation' },
-        { name: 'auth', description: 'Credential verification' },
-        { name: 'ops', description: 'Liveness/readiness probes' },
+        {
+          name: 'Users',
+          description: 'Create a login with a unique username and a policy-checked password.',
+        },
+        {
+          name: 'Authentication',
+          description:
+            'Verify a username/password pair. Returns 200 on success or an identical 401 otherwise — no token is issued.',
+        },
+        {
+          name: 'Operations',
+          description:
+            'Liveness, readiness, and Prometheus metrics for orchestrators and monitoring.',
+        },
       ],
     },
   });
