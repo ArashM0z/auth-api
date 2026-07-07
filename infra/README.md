@@ -13,9 +13,17 @@ flowchart LR
     ECS -->|rediss :6379, SG-restricted| R[(ElastiCache Redis<br/>private subnets<br/>TLS + AUTH + at-rest encryption)]
 
     ECR[ECR<br/>scan-on-push, immutable tags] -.->|image pull| ECS
-    SSM[SSM Parameter Store<br/>SecureString REDIS_URL] -.->|secret injection| ECS
-    CW[CloudWatch<br/>logs 30d + Container Insights] -.->|logs & metrics| ECS
+    SM[Secrets Manager<br/>REDIS_URL + auth token] -.->|secret injection| ECS
+    SSM[SSM Parameter Store<br/>LOG_LEVEL, PASSWORD_MIN_LENGTH…] -.->|config injection| ECS
+    CW[CloudWatch<br/>logs + Container Insights] -.->|logs & metrics| ECS
 ```
+
+Deployed per environment (`dev` / `staging` / `prod`) with env-prefixed
+resource names and per-environment state — see
+[../docs/CONFIGURATION.md](../docs/CONFIGURATION.md). **Secrets** (the Redis
+auth token and full `rediss://` URL) live in AWS Secrets Manager; **non-secret
+config** lives in SSM Parameter Store; the ECS task's execution role is scoped
+to exactly those ARNs.
 
 Traffic is admitted tier-to-tier by security-group reference only:
 `internet → alb SG (:80) → app SG (:3000) → redis SG (:6379)`. The ALB
@@ -77,6 +85,26 @@ On every PR / push to `main` touching `infra/**`:
    deliberate demo trade-offs (no NAT, HTTP-only listener, AWS-managed keys,
    30-day logs) are suppressed **inline** next to the resource with a
    written justification, never blanket-skipped
+
+## Why ECS/Fargate — not EKS, Kubernetes, or Helm
+
+A deliberate decision, not a gap. Kubernetes (and Helm to template it) earns
+its operational weight when you are running a _fleet_ of services with complex
+inter-service networking, custom controllers, or multi-cloud portability
+requirements. This is a **single, stateless, two-endpoint service**; on that
+shape, ECS Fargate delivers the same "containers behind a load balancer, auto-
+scaled, rolling deploys" outcome with a fraction of the operational surface —
+no control plane to run, patch, and secure, and (relevant to Lendesk's stack)
+it lives natively in the AWS + Terraform world the rest of this repo targets.
+
+Shipping a Helm chart _alongside_ this ECS definition would present a reviewer
+with two contradictory deployment stories. If a Kubernetes platform were the
+organizational standard, the equivalent artifacts would be a Deployment +
+Service + HPA + Ingress (or a small Helm chart), and the app is already ready
+for it: stateless, config/secrets injected from the environment, `/healthz`
+and `/readyz` for liveness/readiness probes, `/metrics` for a `ServiceMonitor`,
+graceful SIGTERM handling for rolling updates, and a non-root image. The
+deployment target is a swap; the application contract is unchanged.
 
 ## State backend
 
