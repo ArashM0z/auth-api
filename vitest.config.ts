@@ -27,7 +27,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/server.ts', 'src/data/**'],
+      // server.ts and tracing.ts are process-entry / opt-in-collector code
+      // exercised only in a live deployment, not the test harness.
+      exclude: ['src/server.ts', 'src/observability/tracing.ts', 'src/data/**'],
       thresholds: {
         lines: 85,
         functions: 85,
