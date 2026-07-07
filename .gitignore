@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+*.tsbuildinfo
+*.log
+.DS_Store
+.vitest-reports/
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/.terraform.lock.hcl
+bench/results.local.json

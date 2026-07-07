@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, typecheck & API contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      # The committed OpenAPI document is generated from route schemas;
+      # regenerate and fail on drift so the contract can never lie.
+      - run: npm run openapi:generate
+      - run: git diff --exit-code openapi.json
+      - run: npm run openapi:lint
+
+  test:
+    name: Tests (unit + property + integration vs real Redis)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Testcontainers spins up redis:8-alpine using the runner's Docker —
+      # the identical suite runs on a laptop and in CI.
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+
+  docker:
+    name: Production image builds & runs as non-root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target prod -t auth-api:ci .
+      - name: Image must not run as root
+        run: |
+          uid="$(docker run --rm --entrypoint node auth-api:ci -e 'console.log(process.getuid())')"
+          test "$uid" = "1000"

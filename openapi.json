@@ -1,0 +1,720 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Authentication API",
+    "description": "Internal service for creating and verifying user credentials. All errors are RFC 9457 Problem Details (application/problem+json).",
+    "version": "1.0.0"
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "liveness",
+        "summary": "Liveness probe (process is up)",
+        "tags": ["ops"],
+        "description": "Always 200 while the process can serve requests. Used by orchestrators to decide restarts; does not check dependencies.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "readiness",
+        "summary": "Readiness probe (Redis reachable)",
+        "tags": ["ops"],
+        "description": "200 while Redis answers PING within 1s, 503 otherwise. Used by load balancers to stop routing to an instance that lost its datastore.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ready"]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users": {
+      "post": {
+        "operationId": "createUser",
+        "summary": "Create a new login",
+        "tags": ["users"],
+        "description": "Creates a user with a unique (case-insensitive) username. Uniqueness is enforced atomically in Redis (SET NX) — concurrent duplicate registrations cannot race.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 32,
+                    "pattern": "^[A-Za-z0-9._-]+$",
+                    "description": "3-32 chars; letters, digits, \".\", \"_\", \"-\". Case-insensitively unique."
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "description": "Checked against the password policy (NIST SP 800-63B-4): length + common-password blocklist; no composition rules."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user"],
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "required": ["username", "createdAt"],
+                      "properties": {
+                        "username": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "description": "RFC 3339 UTC timestamp"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Verify a username/password pair",
+        "tags": ["auth"],
+        "description": "Returns 200 when the credentials are valid and 401 otherwise. Unknown-username and wrong-password failures are indistinguishable by response AND by timing (dummy Argon2id verification). Failed attempts are rate limited per username; the counter clears on success.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["authenticated", "user"],
+                  "properties": {
+                    "authenticated": {
+                      "type": "boolean",
+                      "enum": [true]
+                    },
+                    "user": {
+                      "type": "object",
+                      "required": ["username"],
+                      "properties": {
+                        "username": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RFC 9457 Problem Details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["type", "title", "status", "code"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "URI reference identifying the problem type"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short human-readable summary of the problem type"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "HTTP status code"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable problem code"
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Occurrence-specific explanation"
+                    },
+                    "instance": {
+                      "type": "string",
+                      "description": "URI of the request that failed"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Correlation id (X-Request-Id)"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["field", "rule", "message"],
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Field-level validation failures"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "RFC 9457 Problem Details"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "users",
+      "description": "User creation"
+    },
+    {
+      "name": "auth",
+      "description": "Credential verification"
+    },
+    {
+      "name": "ops",
+      "description": "Liveness/readiness probes"
+    }
+  ]
+}
