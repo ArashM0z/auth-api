@@ -87,10 +87,12 @@ error handlers → routes.
 - **Local/reviewer**: `docker compose up` — prod-target image (non-root, no
   devDependencies) + Redis with AOF everysec and healthchecks.
 - **AWS (defined in [infra/](../infra/), validated, not applied)**: ECR →
-  ECS Fargate (2+ tasks, circuit-breaker deploys, target-tracking
+  ECS Fargate (per-env task count, circuit-breaker deploys, target-tracking
   autoscaling) behind an ALB health-checked on `/readyz`; ElastiCache Redis
-  with at-rest + in-transit encryption and auth token from SSM;
-  `TRUST_PROXY=true` so client IPs come from the ALB.
+  with at-rest + in-transit encryption; the Redis auth token / URL come from
+  **AWS Secrets Manager** and non-secret config from **SSM Parameter Store**
+  (see [CONFIGURATION.md](CONFIGURATION.md)); `TRUST_PROXY=true` so client IPs
+  come from the ALB. Multi-environment (dev/staging/prod) with per-env state.
 
 ## 7. Crosscutting concepts
 
@@ -105,10 +107,12 @@ error handlers → routes.
 
 ## 8. Risks & technical debt
 
-| Risk                                      | Posture                                                                     |
-| ----------------------------------------- | --------------------------------------------------------------------------- |
-| Redis durability as system of record      | AOF everysec (≤1s loss) documented; RDB+AOF or Postgres for real production |
-| Fixed-window limiter burst (≤2× at edges) | Accepted at current thresholds; sliding window listed as refinement         |
-| CSP disabled for Swagger UI               | JSON API unaffected; scope per-route or host docs separately in production  |
-| Single Redis in demo                      | HA path (replication/Sentinel or managed ElastiCache) documented in infra   |
-| No token issuance                         | Deliberate scope cut (ADR-0005); next iteration                             |
+| Risk                                      | Posture                                                                                                                   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Redis durability as system of record      | AOF everysec (≤1s loss) documented; RDB+AOF or Postgres for real production                                               |
+| Fixed-window limiter burst (≤2× at edges) | Accepted at current thresholds; sliding window listed as refinement                                                       |
+| CSP disabled for Swagger UI               | JSON API unaffected; scope per-route or host docs separately in production                                                |
+| Single Redis in demo                      | HA path (replication/Sentinel or managed ElastiCache) documented in infra                                                 |
+| No token issuance                         | Deliberate scope cut (ADR-0005); next iteration                                                                           |
+| IaC test depth                            | `tofu test` asserts security invariants at plan time; policy-as-code (OPA/Conftest) and apply-time sandbox tests deferred |
+| Metrics/trace ops wiring                  | `/metrics` + OTLP tracing implemented; scrape config, dashboards, alert rules are environment-side                        |

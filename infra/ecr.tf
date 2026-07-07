@@ -6,7 +6,11 @@
 
 resource "aws_ecr_repository" "app" {
   #checkov:skip=CKV_AWS_136:AWS-managed AES-256 encryption is sufficient for demo images; a customer-managed KMS key adds USD 1/mo + per-request cost without a threat model that needs it here.
-  name = var.project_name
+  # Env-scoped for isolation, consistent with every other resource. An
+  # alternative is one SHARED registry with an image-promotion pipeline
+  # (build/scan once in dev, then re-tag/pull the identical digest in staging
+  # and prod) — preferable when environments are separate AWS accounts.
+  name = local.name_prefix
 
   # Immutable tags mean a tag can never silently point at different bytes —
   # what was reviewed/scanned is what runs. CI pushes a unique tag per build.

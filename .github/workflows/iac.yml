@@ -7,12 +7,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "infra/**"
-      - ".github/workflows/iac.yml"
+      - 'infra/**'
+      - '.github/workflows/iac.yml'
   pull_request:
     paths:
-      - "infra/**"
-      - ".github/workflows/iac.yml"
+      - 'infra/**'
+      - '.github/workflows/iac.yml'
 
 # Read-only token: nothing here writes to the repo or needs cloud creds.
 permissions:
@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   iac:
-    name: fmt / validate / tflint / checkov
+    name: fmt / validate / test / tflint / checkov
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,6 +39,13 @@ jobs:
 
       - name: Validate
         run: tofu -chdir=infra validate
+
+      # Native `tofu test`: security- and multi-environment assertions run
+      # against mock providers (command = plan), so this needs NO AWS
+      # credentials and creates nothing. Providers were installed by the
+      # `init -backend=false` step above.
+      - name: Test
+        run: tofu -chdir=infra test
 
       - name: Set up TFLint
         uses: terraform-linters/setup-tflint@v6

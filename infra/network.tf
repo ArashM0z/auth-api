@@ -31,7 +31,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "${var.project_name}-vpc"
+    Name = "${local.name_prefix}-vpc"
   }
 }
 
@@ -43,7 +43,7 @@ resource "aws_default_security_group" "main" {
   # No ingress/egress blocks: all traffic denied.
 
   tags = {
-    Name = "${var.project_name}-default-deny-all"
+    Name = "${local.name_prefix}-default-deny-all"
   }
 }
 
@@ -51,7 +51,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-igw"
+    Name = "${local.name_prefix}-igw"
   }
 }
 
@@ -70,7 +70,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "${var.project_name}-public-${local.azs[count.index]}"
+    Name = "${local.name_prefix}-public-${local.azs[count.index]}"
   }
 }
 
@@ -84,7 +84,7 @@ resource "aws_subnet" "private" {
   availability_zone = local.azs[count.index]
 
   tags = {
-    Name = "${var.project_name}-private-${local.azs[count.index]}"
+    Name = "${local.name_prefix}-private-${local.azs[count.index]}"
   }
 }
 
@@ -92,7 +92,7 @@ resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-public"
+    Name = "${local.name_prefix}-public"
   }
 }
 
@@ -116,7 +116,7 @@ resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-private"
+    Name = "${local.name_prefix}-private"
   }
 }
 
@@ -130,6 +130,6 @@ resource "aws_route_table_association" "private" {
 # ElastiCache lives in the isolated private tier: it never needs outbound
 # internet, and nothing outside the VPC should ever reach it.
 resource "aws_elasticache_subnet_group" "redis" {
-  name       = "${var.project_name}-redis"
+  name       = "${local.name_prefix}-redis"
   subnet_ids = aws_subnet.private[*].id
 }
