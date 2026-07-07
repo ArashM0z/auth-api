@@ -27,6 +27,7 @@
     "scripts/**/*.ts",
     "bench/**/*.ts",
     "vitest.config.ts",
+    "vitest.unit.config.ts",
     "eslint.config.js"
   ]
 }

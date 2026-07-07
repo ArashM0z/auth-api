@@ -47,6 +47,27 @@ jobs:
           path: coverage/
           retention-days: 14
 
+  mutation:
+    name: Mutation testing (test quality)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Stryker mutates the core domain logic and fails if the unit suite
+      # doesn't kill enough mutants — coverage measures lines run, this
+      # measures whether the assertions actually catch regressions.
+      - run: npm run test:mutation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 14
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest

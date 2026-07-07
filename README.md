@@ -241,10 +241,16 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
 5. **Contract** — live responses validated against the _committed_
    `openapi.json`, which CI regenerates and diffs, so docs cannot lie.
 
+Plus **mutation testing** (Stryker) over the core domain logic: it mutates
+the source and fails CI if the unit suite doesn't _kill_ the mutants —
+measuring whether the assertions actually catch regressions, not just which
+lines ran. Current score **87%**, gated at 80% in CI.
+
 ```bash
 npm test                 # everything (Docker required for integration)
 npm run test:unit        # fast feedback
 npm run test:coverage    # + enforced thresholds
+npm run test:mutation    # Stryker mutation testing (domain logic)
 ```
 
 ## CI/CD & infrastructure
