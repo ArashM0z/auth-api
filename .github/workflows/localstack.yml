@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# Never run two provisioning jobs at once; queue rather than cancel mid-apply.
+concurrency:
+  group: localstack
+  cancel-in-progress: false
+
 jobs:
   provision:
     name: Provision the stack on LocalStack
