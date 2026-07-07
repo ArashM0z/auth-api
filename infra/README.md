@@ -66,13 +66,32 @@ curl "http://$(tofu output -raw alb_dns_name)/healthz"
 Tags are immutable in ECR, so each build pushes a fresh tag (CI would use
 the git SHA) and deploys are `tofu apply -var app_image_tag=<tag>`.
 
-## Why this is not applied
+## Running it on LocalStack (simulated AWS)
 
-This is a take-home: the deliverable is reviewable IaC, not a running
-(billable) environment. Everything here is verified statically. It must
-pass `tofu fmt -check`, `tofu validate` (with providers resolved), and
-`tflint` cleanly, which proves syntax, types, references, and a large
-class of AWS-specific mistakes without creating a single resource.
+Not applied to real (billable) AWS — but not just linted, either. The whole
+stack is **applied end to end against [LocalStack](https://localstack.cloud),
+a local simulation of the AWS APIs**, so the Terraform is genuinely exercised:
+every resource (VPC, ECS, ElastiCache, ALB, Route 53, API Gateway, IAM,
+Secrets Manager, SSM) is created in real dependency order against a simulated
+cloud — with **no AWS account and zero cost**.
+
+```bash
+export LOCALSTACK_AUTH_TOKEN=<token>   # Pro features: ECS, ElastiCache, Route 53
+localstack start -d
+
+pip install terraform-local            # tflocal points the AWS provider at LocalStack
+tflocal apply -var-file=environments/dev.tfvars
+```
+
+`tflocal` injects the LocalStack endpoints automatically, so nothing in the
+Terraform changes. Browse what came up in the LocalStack dashboard (Resource
+Browser, region `ca-central-1`).
+
+It also runs **in CI**: the
+[`LocalStack infra test`](../.github/workflows/localstack.yml) workflow boots
+LocalStack inside the GitHub runner, applies the full stack, and asserts every
+layer comes up — an infrastructure integration test, still \$0. So both the
+syntax (via the static checks below) _and_ the actual apply are covered.
 
 ## CI checks (`.github/workflows/iac.yml`)
 
