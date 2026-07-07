@@ -8,6 +8,7 @@ import { validatePassword } from '../domain/password-policy.js';
 import { ProblemError } from '../problems.js';
 import { ProblemSchema } from '../schemas.js';
 import { audit } from '../audit.js';
+import type { Metrics } from '../observability/metrics.js';
 
 const CreateUserBody = Type.Object(
   {
@@ -44,6 +45,7 @@ const CreateUserReply = Type.Object(
 export interface UserRouteDeps {
   readonly users: UserService;
   readonly config: AppConfig;
+  readonly metrics: Metrics;
 }
 
 export function registerUserRoutes(instance: FastifyInstance, deps: UserRouteDeps): void {
@@ -99,6 +101,7 @@ export function registerUserRoutes(instance: FastifyInstance, deps: UserRouteDep
         });
       }
 
+      deps.metrics.usersCreated.inc();
       audit(request.log, 'user.created', { username: username.value, ip: request.ip });
       return reply
         .code(201)

@@ -14,9 +14,12 @@ import { PasswordHasher } from './domain/password-hasher.js';
 import { UserService } from './services/user-service.js';
 import { PROBLEM_CONTENT_TYPE, ProblemError, problemBody } from './problems.js';
 import type { FieldError } from './problems.js';
+import { createMetrics, registerHashQueueGauge } from './observability/metrics.js';
+import type { Metrics } from './observability/metrics.js';
 import { registerUserRoutes } from './routes/users.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerHealthRoutes } from './routes/health.js';
+import { registerMetricsRoute } from './routes/metrics.js';
 
 declare module 'fastify' {
   interface FastifyContextConfig {
@@ -28,6 +31,12 @@ declare module 'fastify' {
 export interface BuildOverrides {
   /** Inject a Redis client (tests, spec generation); skips connecting. */
   redis?: AppRedis;
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    metrics: Metrics;
+  }
 }
 
 /** Static route/method map so unmatched methods get a correct 405 + Allow. */
@@ -135,10 +144,25 @@ export async function buildApp(
   const limiter = new RedisRateLimiter(redis);
   const users = new UserService(redis, hasher);
 
+  const metrics = createMetrics();
+  registerHashQueueGauge(metrics, hasher);
+  app.decorate('metrics', metrics);
+
   // ---- correlation id + per-IP rate limit --------------------------------
   app.addHook('onSend', async (request, reply, payload) => {
     reply.header('x-request-id', request.id);
     return payload;
+  });
+
+  app.addHook('onResponse', async (request, reply) => {
+    // routeOptions.url is the template ("/v1/users"), so metric cardinality
+    // stays bounded — never the raw path with its variable segments.
+    const route = request.routeOptions.url ?? 'unmatched';
+    metrics.httpRequests.inc({
+      method: request.method,
+      route,
+      status: reply.statusCode,
+    });
   });
 
   const ipPolicy: WindowPolicy = {
@@ -151,6 +175,7 @@ export async function buildApp(
     const state = await limiter.hit(ipPolicy, request.ip);
     if (!state.allowed) {
       request.log.warn({ ip: request.ip }, 'ip rate limited');
+      metrics.rateLimited.inc({ scope: 'ip' });
       return reply
         .code(429)
         .headers({
@@ -267,8 +292,9 @@ export async function buildApp(
 
   // ---- routes -------------------------------------------------------------
   registerHealthRoutes(app, redis);
-  registerUserRoutes(app, { users, config });
-  registerAuthRoutes(app, { users, hasher, limiter, config });
+  registerMetricsRoute(app, metrics);
+  registerUserRoutes(app, { users, config, metrics });
+  registerAuthRoutes(app, { users, hasher, limiter, config, metrics });
 
   return app;
 }
