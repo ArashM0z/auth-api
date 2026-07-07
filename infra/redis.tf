@@ -14,8 +14,8 @@
 resource "aws_elasticache_replication_group" "redis" {
   #checkov:skip=CKV_AWS_191:Default AWS-owned key for at-rest encryption is acceptable for a demo; production with compliance requirements would supply a customer-managed KMS key.
   #checkov:skip=CKV2_AWS_50:Multi-AZ automatic failover needs a replica node, doubling the ~USD 11/mo cache cost for a demo; production enables it (see header comment).
-  replication_group_id = "${var.project_name}-redis"
-  description          = "Redis datastore for ${var.project_name}"
+  replication_group_id = "${local.name_prefix}-redis"
+  description          = "Redis datastore for ${local.name_prefix}"
 
   engine         = "redis"
   engine_version = "7.1"
@@ -44,24 +44,13 @@ resource "aws_elasticache_replication_group" "redis" {
 }
 
 # Generated at apply time so no credential ever appears in the repo. It does
-# land in state — see the backend note in versions.tf.
+# land in state — see the backend note in versions.tf. The token is stored as
+# a secret (Secrets Manager) and assembled into the REDIS_URL secret in
+# secrets.tf; the non-secret host/port are published to SSM in config.tf.
 resource "random_password" "redis_auth" {
   # ElastiCache AUTH tokens must be 16-128 printable characters excluding
   # '@', '"' and '/'. Alphanumeric-only also keeps the token safe to embed
-  # in the rediss:// URL below without percent-encoding.
+  # in the rediss:// URL without percent-encoding.
   length  = 32
   special = false
-}
-
-# The app consumes a single REDIS_URL (12-factor style), so assemble
-# endpoint + credentials here once instead of teaching the app about
-# ElastiCache. SecureString means the value is KMS-encrypted at rest and
-# only principals with ssm:GetParameters on this ARN (the ECS execution
-# role) can read it. rediss:// (double s) selects TLS, matching
-# transit_encryption_enabled above.
-resource "aws_ssm_parameter" "redis_url" {
-  #checkov:skip=CKV_AWS_337:Encrypted with the AWS-managed aws/ssm key; a customer-managed KMS key adds cost/rotation overhead the demo does not need.
-  name  = "/${var.project_name}/redis-url"
-  type  = "SecureString"
-  value = "rediss://:${random_password.redis_auth.result}@${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379"
 }

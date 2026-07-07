@@ -8,7 +8,7 @@ resource "aws_lb" "app" {
   #checkov:skip=CKV2_AWS_20:Redirect-to-HTTPS requires the :443 listener this demo omits (no domain, so no ACM certificate can be issued).
   #checkov:skip=CKV_AWS_150:Deletion protection would block the demo's `tofu destroy`; enable in production.
   #checkov:skip=CKV2_AWS_28:WAF (~USD 5/mo + per-request) is production hardening; the app also rate-limits per-IP in Redis at the application layer.
-  name               = "${var.project_name}-alb"
+  name               = "${local.name_prefix}-alb"
   load_balancer_type = "application"
   internal           = false
   security_groups    = [aws_security_group.alb.id]
@@ -21,7 +21,7 @@ resource "aws_lb" "app" {
 
 resource "aws_lb_target_group" "app" {
   #checkov:skip=CKV_AWS_378:ALB-to-task traffic is plain HTTP inside the VPC, restricted by security groups; production terminates TLS at the ALB (and could re-encrypt to targets if required).
-  name        = "${var.project_name}-tg"
+  name        = "${local.name_prefix}-tg"
   vpc_id      = aws_vpc.main.id
   port        = 3000
   protocol    = "HTTP"

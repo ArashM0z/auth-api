@@ -4,6 +4,33 @@ variable "project_name" {
   default     = "auth-api"
 }
 
+variable "environment" {
+  description = <<-EOT
+    Deployment environment. Drives resource naming/tagging (every resource is
+    prefixed "<project_name>-<environment>") and, via the per-env tfvars in
+    environments/, sizing (task count, cache node type, log retention). No
+    default on purpose: an environment must be chosen explicitly, e.g.
+    `tofu apply -var-file=environments/prod.tfvars`.
+  EOT
+  type        = string
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "environment must be one of: dev, staging, prod."
+  }
+}
+
+variable "log_level" {
+  description = "Application LOG_LEVEL (pino). Published as a non-secret SSM Parameter Store config value; typically debug in dev, info in staging/prod."
+  type        = string
+  default     = "info"
+
+  validation {
+    condition     = contains(["fatal", "error", "warn", "info", "debug", "trace", "silent"], var.log_level)
+    error_message = "log_level must be one of: fatal, error, warn, info, debug, trace, silent."
+  }
+}
+
 variable "aws_region" {
   description = "AWS region to deploy into. ca-central-1 keeps data resident in Canada."
   type        = string
@@ -21,7 +48,7 @@ variable "app_image_tag" {
 }
 
 variable "desired_count" {
-  description = "Baseline number of Fargate tasks. Two tasks across two AZs is the minimum for zero-downtime deploys."
+  description = "Baseline number of Fargate tasks. Set per environment (dev 1, staging 2, prod 3); >= 2 across two AZs is the minimum for zero-downtime deploys in staging/prod."
   type        = number
   default     = 2
 }
@@ -62,7 +89,7 @@ variable "redis_node_type" {
 }
 
 variable "autoscaling_min_capacity" {
-  description = "Lower bound for service auto scaling. Keep >= 2 so one AZ failure never drops the service to zero."
+  description = "Lower bound for service auto scaling. Staging/prod keep >= 2 so one AZ failure never drops the service to zero; dev may use 1 to save cost."
   type        = number
   default     = 2
 }

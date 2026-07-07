@@ -66,11 +66,19 @@ Standards are cited by name so every choice is auditable, not aesthetic.
 4. **Account lockout escalation** — exponential backoff / step-up challenge
    beyond the fixed window; alerting on `auth.rate_limited` spikes.
 5. **MFA hooks**, password reset/change flows (with rehash-on-change).
-6. **Secrets manager** (SSM/Secrets Manager) instead of env files; key
-   rotation runbook.
-7. **Observability** — OpenTelemetry traces (request ids are already
-   propagated), metrics on hash-queue depth and limiter rejections.
-8. **Compliance operationalization** — log retention policy for the audit
+6. **Secret rotation** — the IaC stores the Redis auth token in AWS Secrets
+   Manager and config in SSM Parameter Store (see
+   [docs/CONFIGURATION.md](docs/CONFIGURATION.md)); wiring an automatic
+   rotation Lambda + schedule is the remaining prod step.
+7. **Observability wiring** — Prometheus `/metrics` and OpenTelemetry tracing
+   are implemented (traces opt-in via OTLP env); production adds the scrape
+   config, dashboards, and alert rules (e.g. on `authapi_hash_queued` and
+   `auth.rate_limited` spikes).
+8. **IaC assurance depth** — `tofu test` covers security invariants at plan
+   time; deeper policy-as-code (OPA/Conftest or Sentinel) and apply-time
+   integration tests against a sandbox account are the next layer (see
+   technical debt in [docs/architecture.md](docs/architecture.md)).
+9. **Compliance operationalization** — log retention policy for the audit
    trail (PIPEDA), SOC 2 evidence collection (this repo provides the
    controls; the organization provides the process).
 

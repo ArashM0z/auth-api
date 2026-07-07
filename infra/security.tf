@@ -8,12 +8,12 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_security_group" "alb" {
-  name        = "${var.project_name}-alb"
+  name        = "${local.name_prefix}-alb"
   description = "ALB: public HTTP in, app tier out"
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-alb"
+    Name = "${local.name_prefix}-alb"
   }
 }
 
@@ -41,12 +41,12 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
 }
 
 resource "aws_security_group" "app" {
-  name        = "${var.project_name}-app"
+  name        = "${local.name_prefix}-app"
   description = "Fargate tasks: ALB in, internet + redis out"
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-app"
+    Name = "${local.name_prefix}-app"
   }
 }
 
@@ -63,25 +63,26 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
 }
 
 # Open egress: without NAT or VPC endpoints the tasks pull images from ECR,
-# ship logs to CloudWatch, and fetch the SSM secret directly over the
-# internet (TLS), plus talk to Redis in-VPC. Production narrows this to
-# 443 + the redis SG once traffic flows through VPC endpoints.
+# ship logs to CloudWatch, and fetch config/secrets from SSM Parameter Store
+# and Secrets Manager directly over the internet (TLS), plus talk to Redis
+# in-VPC. Production narrows this to 443 + the redis SG once traffic flows
+# through VPC endpoints.
 resource "aws_vpc_security_group_egress_rule" "app_all" {
-  #checkov:skip=CKV_AWS_382:Tasks need general egress to reach ECR/CloudWatch/SSM public endpoints because the demo omits NAT and VPC endpoints for cost (see network.tf).
+  #checkov:skip=CKV_AWS_382:Tasks need general egress to reach ECR/CloudWatch/SSM/Secrets Manager public endpoints because the demo omits NAT and VPC endpoints for cost (see network.tf).
   security_group_id = aws_security_group.app.id
-  description       = "ECR pulls, CloudWatch Logs, SSM, and Redis"
+  description       = "ECR pulls, CloudWatch Logs, SSM, Secrets Manager, and Redis"
 
   cidr_ipv4   = "0.0.0.0/0"
   ip_protocol = "-1"
 }
 
 resource "aws_security_group" "redis" {
-  name        = "${var.project_name}-redis"
+  name        = "${local.name_prefix}-redis"
   description = "ElastiCache: app tier in only"
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-redis"
+    Name = "${local.name_prefix}-redis"
   }
 }
 
