@@ -2,7 +2,7 @@
 # Multi-stage build. node:24-slim (Debian) over alpine: Node's musl builds
 # are officially "Experimental" support tier; glibc slim is the safe minimum.
 
-FROM node:24-slim AS base
+FROM node:26-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
 
