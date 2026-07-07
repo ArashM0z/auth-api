@@ -1,13 +1,13 @@
 # Authentication API
 
-An internal REST service that creates logins and verifies credentials —
-built to production quality on **Node.js 24 LTS**, **TypeScript 6 (strict)**,
-**Fastify 5**, and **Redis 8**, with **Argon2id** password storage.
+An internal REST service that creates logins and verifies credentials.
+Built on **Node.js 24 LTS**, **TypeScript 6 (strict)**, **Fastify 5**, and
+**Redis 8**, with **Argon2id** password storage.
 
 Every error is an [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457)
-response; the OpenAPI contract is generated from the same schemas that
-validate requests at runtime (and CI fails if the committed spec drifts);
-security decisions cite the standards they implement (NIST SP 800-63B-4,
+response. The OpenAPI contract is generated from the same schemas that
+validate requests at runtime, and CI fails if the committed spec drifts.
+Security decisions cite the standards they implement (NIST SP 800-63B-4,
 OWASP Password Storage Cheat Sheet) rather than folklore.
 
 > **Contents:** [Quickstart](#quickstart) · [API](#api) · [Errors](#error-model) ·
@@ -53,27 +53,27 @@ Or natively: Node ≥ 24, `npm ci && npm run dev` (Redis via compose or any `RED
 | `GET /healthz` — liveness                  | 200                          | —                                                     |
 | `GET /readyz` — readiness (Redis PING)     | 200                          | 503                                                   |
 
-Two spec notes, both deliberate and documented:
-creation returns **201** (RFC 9110 semantics) rather than a literal 200 —
-rationale in [ADR-0004](docs/adr/0004-201-created-deviation.md); and login
-issues **no token/session** because the brief asks only for verification —
-[ADR-0005](docs/adr/0005-no-sessions-or-jwt.md).
+Two spec notes, both deliberate and documented. Creation returns **201**
+(RFC 9110 semantics) rather than a literal 200; rationale in
+[ADR-0004](docs/adr/0004-201-created-deviation.md). Login issues **no
+token/session** because the brief asks only for verification
+([ADR-0005](docs/adr/0005-no-sessions-or-jwt.md)).
 
 **Usernames** are case-insensitively unique (`Alice` = `alice`), NFC-
-normalized, 3–32 chars of `a-z 0-9 . _ -` — homoglyph and case-trick
-duplicate accounts are impossible by construction.
+normalized, 3–32 chars of `a-z 0-9 . _ -`. Homoglyph and case-trick
+duplicate accounts can't be created.
 
 **Passwords** follow NIST SP 800-63B-4 (final, July 2025): minimum **15
-code points** (single-factor SHALL), no composition rules, spaces/emoji
-welcome, screened against a 10k common-password blocklist and the username,
-rejected — never truncated — beyond 256. Details:
+code points** (single-factor SHALL), no composition rules, spaces and emoji
+welcome, screened against a 10k common-password blocklist and the username.
+Anything over 256 is rejected, not truncated. Details:
 [ADR-0007](docs/adr/0007-nist-password-policy.md).
 
 ## Error model
 
 Every non-2xx response is `application/problem+json` (RFC 9457) with a
-stable machine-readable `code`, a `requestId` correlating to the logs, and —
-on validation failures — **all** violated rules at once:
+stable machine-readable `code` and a `requestId` correlating to the logs.
+On validation failures it returns **all** violated rules at once:
 
 ```json
 {
@@ -106,8 +106,8 @@ Problem registry: `validation-error` 400 · `malformed-body` 400 ·
 `rate-limited` 429 (with `Retry-After`) · `internal-error` 500 ·
 `service-unavailable` 503.
 
-The one place detail is _withheld_ on purpose: login failures are a generic
-401 — see below.
+Detail is withheld in one place on purpose: login failures return a generic
+401 (see below).
 
 ## Security model
 
@@ -143,7 +143,7 @@ sequenceDiagram
     end
 ```
 
-Measured on this machine — wrong password vs unknown user, three runs each:
+Measured on this machine, wrong password vs unknown user, three runs each:
 **16–19 ms both**, statistically indistinguishable. An integration test also
 asserts the response _bodies_ are identical.
 
@@ -180,12 +180,12 @@ relative):
 | `GET /healthz` (framework overhead)  | ~25,000 req/s | 0 ms  | 2 ms  |
 | `POST /v1/auth/login`, 8 connections | **208 req/s** | 37 ms | 50 ms |
 
-The login ceiling is the security budget working, not a bottleneck:
-**ceiling ≈ HASH_MAX_CONCURRENCY ÷ verify-time = 8 ÷ 0.037s ≈ 216 req/s** —
-the measurement lands within 4% of the math. Need more? Scale horizontally
-(stateless app tier) or raise `HASH_MAX_CONCURRENCY` with its ~19 MiB/slot
-memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm run bench`
-(the default IP limit otherwise throttles the bench — correctly).
+The login ceiling is the security budget doing its job, not a bottleneck:
+**ceiling ≈ HASH_MAX_CONCURRENCY ÷ verify-time = 8 ÷ 0.037s ≈ 216 req/s**,
+and the measurement lands within 4% of the math. Need more? Scale
+horizontally (stateless app tier) or raise `HASH_MAX_CONCURRENCY`, which
+costs ~19 MiB per slot. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm run bench`
+(the default IP limit otherwise throttles the bench, correctly).
 
 ## Scalability
 
@@ -221,7 +221,7 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
 
 ## Testing
 
-**77 tests, ~96% line coverage** (thresholds enforced in CI), in five layers:
+**79 tests, ~96% line coverage** (thresholds enforced in CI), in five layers:
 
 1. **Unit** — password policy, username normalization, problem registry.
 2. **Property-based** (fast-check) — thousands of adversarial Unicode inputs
@@ -242,9 +242,9 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
    `openapi.json`, which CI regenerates and diffs, so docs cannot lie.
 
 Plus **mutation testing** (Stryker) over the core domain logic: it mutates
-the source and fails CI if the unit suite doesn't _kill_ the mutants —
-measuring whether the assertions actually catch regressions, not just which
-lines ran. Current score **87%**, gated at 80% in CI.
+the source and fails CI if the unit suite doesn't _kill_ the mutants. That
+measures whether the assertions actually catch regressions, rather than just
+which lines ran. Current score **87%**, gated at 80% in CI.
 
 ```bash
 npm test                 # everything (Docker required for integration)
@@ -265,8 +265,8 @@ zero devDependencies and runs as uid 1000, enforced in CI). Plus
 
 **Infrastructure as code — [OpenTofu](https://opentofu.org)** ([infra/](infra/)).
 OpenTofu is the Linux Foundation's open-source (MPL-2.0) fork of Terraform,
-created after HashiCorp's 2023 move to the BUSL source-available license — the
-right default now for new IaC that wants to stay truly open, and drop-in
+created after HashiCorp's 2023 move to the BUSL source-available license. It's
+a sensible default for new IaC that wants to stay open, and it's drop-in
 compatible with the HCL and provider ecosystem. The stack: ECR (scan-on-push,
 immutable tags) → ECS Fargate behind an ALB (health-checked on `/readyz`) →
 ElastiCache Redis (encryption at rest + in transit), target-tracking
@@ -282,7 +282,7 @@ autoscaling, least-privilege IAM.
   security-group restrictions, immutable/scanned images, no secret in outputs)
   plus `tflint` and `checkov`, all in [iac.yml](.github/workflows/iac.yml).
 
-Deliberately **validated but not applied** — the demo stays zero-cost. See
+Deliberately **validated but not applied** so the demo stays zero-cost. See
 [infra/README.md](infra/README.md).
 
 ## Design decisions
@@ -310,18 +310,19 @@ sliding-window limiter, `GET /users/:name` (rejected — enumeration endpoint).
 
 ## Approach & AI workflow
 
-Directed by me, implemented with AI. All of the major ideas and
-architectural decisions here are mine — scope discipline, atomic uniqueness,
-timing-safe auth, standards-first design, and running an adversarial review
-and acting on it. The AI wrote the code and tests to that direction, verified
-every stack/standards fact against primary sources (npm, IETF, NIST, OWASP)
-before a line was written, and executed the review — which surfaced a real
-HIGH-severity brute-force race that I then had fixed and regression-tested.
-I supervised throughout and can defend every decision line by line. The full,
-honest account: [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
+I drove the design; the AI did most of the typing. The calls that matter
+here are mine: keeping scope tight, treating uniqueness as an atomicity
+problem, making login timing-safe, following the standards, and acting on the
+adversarial review it ran. The AI wrote the code and tests to that direction
+and checked every stack and standards fact against primary sources (npm,
+IETF, NIST, OWASP) before writing a line. It also ran the review, which
+turned up a real HIGH-severity brute-force race that I then had fixed and
+regression-tested. I supervised throughout and can defend every decision line
+by line. The full account is in [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
-Every architectural and security decision above is mine to defend —
-the tooling multiplied research breadth and review depth, not judgment.
+Every architectural and security decision above is mine to defend. The
+tooling widened research breadth and review depth; it didn't stand in for
+judgment.
 
 ## License
 
