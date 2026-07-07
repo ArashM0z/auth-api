@@ -50,4 +50,5 @@ jobs:
           echo "ElastiCache: $(awslocal elasticache describe-replication-groups --query 'ReplicationGroups[0].ReplicationGroupId' --output text)"
           echo "Load bal.:   $(awslocal elbv2 describe-load-balancers --query 'LoadBalancers[0].LoadBalancerName' --output text)"
           echo "Route 53:    $(awslocal route53 list-hosted-zones --query 'HostedZones[0].Name' --output text)"
+          echo "API Gateway: $(awslocal apigatewayv2 get-apis --query 'Items[0].Name' --output text)"
           echo "Secrets:     $(awslocal secretsmanager list-secrets --query 'length(SecretList)' --output text)"
