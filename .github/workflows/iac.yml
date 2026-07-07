@@ -1,0 +1,69 @@
+# Static checks for infra/ — this IaC is never applied in CI (zero-cost
+# take-home), so the pipeline proves formatting, validity, lint cleanliness,
+# and security posture instead of running a plan against real credentials.
+name: IaC
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/iac.yml"
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/iac.yml"
+
+# Read-only token: nothing here writes to the repo or needs cloud creds.
+permissions:
+  contents: read
+
+jobs:
+  iac:
+    name: fmt / validate / tflint / checkov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Check formatting
+        run: tofu -chdir=infra fmt -check -recursive
+
+      # -backend=false: resolve providers/modules without touching state —
+      # validation needs no backend and CI must not hold one.
+      - name: Init (no backend)
+        run: tofu -chdir=infra init -backend=false
+
+      - name: Validate
+        run: tofu -chdir=infra validate
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.63.1
+
+      - name: Init TFLint
+        run: tflint --init
+        working-directory: infra
+        env:
+          # Authenticated ruleset download avoids GitHub API rate limits.
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Run TFLint
+        run: tflint --format compact
+        working-directory: infra
+
+      # soft_fail stays false: findings fail the build. The deliberate demo
+      # trade-offs (no NAT, HTTP listener, AWS-managed KMS keys, 30-day
+      # logs) are suppressed inline in the HCL with justifications, so any
+      # NEW finding is a real regression.
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          framework: terraform
+          quiet: true
+          soft_fail: false
