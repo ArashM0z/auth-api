@@ -17,6 +17,15 @@ OWASP Password Storage Cheat Sheet) rather than folklore.
 
 ## Quickstart
 
+**Live — nothing to install.** The whole thing is hosted on GitHub Pages:
+
+- [**Interactive playground**](https://arashm0z.github.io/auth-api/playground.html) — fire every case (create, login, weak, duplicate, wrong password, rate-limited, malformed) and watch the real HTTP exchange plus the client ⇄ app ⇄ Redis round trip that produced it
+- [**API reference**](https://arashm0z.github.io/auth-api/api.html) — the OpenAPI contract, rendered with [Scalar](https://github.com/scalar/scalar)
+- [**Rate-limiter demo**](https://arashm0z.github.io/auth-api/ratelimit.html) — the live per-username failure window
+- [**Infrastructure**](https://arashm0z.github.io/auth-api/) — the Terraform stack applied on [LocalStack](https://localstack.cloud) (56 resources, $0, re-checked in CI)
+
+Or run it locally:
+
 ```bash
 docker compose up --build        # API on :3000, Redis with AOF durability
 ```
