@@ -1,13 +1,13 @@
 # Architecture
 
-Structure follows a trimmed [arc42](https://arc42.org) template — the
+Structure follows a trimmed [arc42](https://arc42.org) template, keeping the
 sections that earn their keep at this system size.
 
 ## 1. Goals & constraints
 
-**Goals** (from the brief, hardened): RESTful JSON auth API for internal
-services — create logins with unique usernames, verify credentials; fast;
-secure enough to pass an audit; production-level quality.
+**Goals** (from the brief, hardened): a RESTful JSON auth API for internal
+services that creates logins with unique usernames and verifies credentials;
+fast; secure enough to pass an audit; production-level quality.
 
 **Constraints**: Node.js runtime and Redis for data storage (both mandated);
 no time-boxed feature beyond the two capabilities (scope discipline is a
@@ -38,8 +38,8 @@ flowchart LR
     P -.probes.-> A
 ```
 
-Consumers are other backend services (no browsers — hence no CORS, no
-cookies). The API's outputs besides responses: structured audit logs and
+Consumers are other backend services (no browsers, hence no CORS and no
+cookies). Besides responses, the API emits structured audit logs and exposes
 probe endpoints.
 
 ## 3. Solution strategy
@@ -47,8 +47,8 @@ probe endpoints.
 One source of truth per concern:
 
 - **TypeBox schemas** → runtime validation (AJV), static types (type
-  provider), OpenAPI document, response whitelisting. Contract drift is a CI
-  failure, not a possibility.
+  provider), OpenAPI document, response whitelisting. Contract drift is
+  caught by CI, not left to chance.
 - **Redis primitives** → correctness guarantees: `SET NX` for atomic
   uniqueness, `INCR`+`EXPIRE NX` windows for distributed rate limiting.
 - **Argon2id PHC strings** → self-describing credential storage that can

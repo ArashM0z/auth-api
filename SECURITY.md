@@ -2,7 +2,8 @@
 
 This document is the security half of the submission: what is defended, how,
 where the residual risks are, and what a production deployment must add.
-Standards are cited by name so every choice is auditable, not aesthetic.
+Standards are cited by name so every choice is auditable rather than a matter
+of taste.
 
 ## Threat model & mitigations
 
@@ -29,7 +30,7 @@ Standards are cited by name so every choice is auditable, not aesthetic.
 
 ## Deliberately rejected
 
-- **`Server-Timing` header** — would hand attackers the exact timing oracle
+- **`Server-Timing` header** — would hand attackers the timing oracle
   the dummy-hash defense closes.
 - **`GET /users/:name`** — not in the brief, and it would be a purpose-built
   enumeration endpoint.
@@ -51,17 +52,17 @@ Standards are cited by name so every choice is auditable, not aesthetic.
 - **CSP disabled globally** so the self-hosted Scalar API reference at `/docs` works;
   the API surface itself is JSON-only where CSP does not apply. A production
   hardening pass would scope CSP per route or host docs separately.
-- **Timing equalization is exact only while hash parameters are uniform.**
+- **Timing equalization holds only while hash parameters are uniform.**
   The unknown-user path verifies against a boot-time dummy hash built with
   the _current_ Argon2id parameters. If an operator later _raises_ those
   parameters, an existing user whose stored hash still encodes the older,
   cheaper parameters (and who has not yet logged in successfully to trigger
-  rehash-on-login) verifies slightly faster than the unknown-user path —
-  a narrow, transient enumeration signal for that specific account class.
+  rehash-on-login) verifies slightly faster than the unknown-user path,
+  a narrow and transient enumeration signal for that specific account class.
   It is bounded by the per-username failure limiter (≈10 samples / 15 min)
-  and drains as accounts re-authenticate. The robust closure — a constant
+  and drains as accounts re-authenticate. The robust fix (a constant
   minimum handler time, or a dummy hash pinned to the weakest deployed
-  parameters — is listed in future work; a parameter bump should be paired
+  parameters) is listed in future work; a parameter bump should be paired
   with a forced-rehash migration. (Surfaced by the adversarial review.)
 
 ## Required before real production (annotated future work)
