@@ -7,12 +7,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "infra/**"
-      - ".github/workflows/iac.yml"
+      - 'infra/**'
+      - '.github/workflows/iac.yml'
   pull_request:
     paths:
-      - "infra/**"
-      - ".github/workflows/iac.yml"
+      - 'infra/**'
+      - '.github/workflows/iac.yml'
 
 # Read-only token: nothing here writes to the repo or needs cloud creds.
 permissions:
