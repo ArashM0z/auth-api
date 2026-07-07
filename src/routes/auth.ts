@@ -10,6 +10,7 @@ import { normalizeUsername } from '../domain/username.js';
 import { ProblemError } from '../problems.js';
 import { ProblemSchema } from '../schemas.js';
 import { audit } from '../audit.js';
+import type { Metrics } from '../observability/metrics.js';
 
 /**
  * The login schema is deliberately loose (any non-empty strings): a
@@ -37,6 +38,7 @@ export interface AuthRouteDeps {
   readonly hasher: PasswordHasher;
   readonly limiter: RedisRateLimiter;
   readonly config: AppConfig;
+  readonly metrics: Metrics;
 }
 
 export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDeps): void {
@@ -78,6 +80,8 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
 
       const gate = await deps.limiter.peek(failurePolicy, subject);
       if (!gate.allowed) {
+        deps.metrics.rateLimited.inc({ scope: 'username' });
+        deps.metrics.authAttempts.inc({ outcome: 'rate_limited' });
         audit(request.log, 'auth.rate_limited', { username: subject, ip: request.ip });
         throw new ProblemError('RATE_LIMITED', {
           detail: 'Too many failed attempts for this account. Retry later.',
@@ -94,6 +98,7 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
         if (result.ok) {
           verifiedUsername = result.username;
           if (result.rehashed) {
+            deps.metrics.passwordRehashes.inc();
             audit(request.log, 'user.password_rehashed', { username: result.username });
           }
         }
@@ -104,6 +109,7 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
 
       if (verifiedUsername === undefined) {
         const state = await deps.limiter.hit(failurePolicy, subject);
+        deps.metrics.authAttempts.inc({ outcome: 'invalid' });
         audit(request.log, 'auth.failure', { username: subject, ip: request.ip });
         throw new ProblemError('INVALID_CREDENTIALS', {
           detail: 'Username or password is incorrect.',
@@ -112,6 +118,7 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
       }
 
       await deps.limiter.clear(failurePolicy, subject);
+      deps.metrics.authAttempts.inc({ outcome: 'success' });
       audit(request.log, 'auth.success', { username: verifiedUsername, ip: request.ip });
       return reply
         .code(200)

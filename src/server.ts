@@ -1,6 +1,11 @@
 import closeWithGrace from 'close-with-grace';
+import { startTracing } from './observability/tracing.js';
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
+
+// Must run before the app is built so Fastify gets instrumented. No-op unless
+// OTEL_EXPORTER_OTLP_ENDPOINT (or OTEL_ENABLED=true) is set.
+const tracing = startTracing();
 
 const config = loadConfig();
 const app = await buildApp(config);
@@ -12,6 +17,7 @@ closeWithGrace({ delay: 10_000 }, async ({ err }) => {
     app.log.error({ err }, 'shutting down after fatal error');
   }
   await app.close();
+  if (tracing !== undefined) await tracing.shutdown();
 });
 
 try {

@@ -45,6 +45,16 @@ export class PasswordHasher {
     this.dummyHash = await this.hash(`dummy-${randomUUID()}`);
   }
 
+  /** Hashes currently executing — exposed for the queue-depth gauge. */
+  activeCount(): number {
+    return this.limit.activeCount;
+  }
+
+  /** Hashes waiting for a concurrency slot — the scale-out signal. */
+  pendingCount(): number {
+    return this.limit.pendingCount;
+  }
+
   async hash(password: string): Promise<PasswordHash> {
     const hashed = await this.limit(() => argon2.hash(password, this.options));
     return hashed as PasswordHash;
