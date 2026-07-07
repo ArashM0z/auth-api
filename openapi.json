@@ -13,9 +13,7 @@
       "get": {
         "operationId": "liveness",
         "summary": "Liveness probe (process is up)",
-        "tags": [
-          "ops"
-        ],
+        "tags": ["ops"],
         "description": "Always 200 while the process can serve requests. Used by orchestrators to decide restarts; does not check dependencies.",
         "responses": {
           "200": {
@@ -24,15 +22,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "status"
-                  ],
+                  "required": ["status"],
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "ok"
-                      ]
+                      "enum": ["ok"]
                     }
                   },
                   "additionalProperties": false
@@ -47,9 +41,7 @@
       "get": {
         "operationId": "readiness",
         "summary": "Readiness probe (Redis reachable)",
-        "tags": [
-          "ops"
-        ],
+        "tags": ["ops"],
         "description": "200 while Redis answers PING within 1s, 503 otherwise. Used by load balancers to stop routing to an instance that lost its datastore.",
         "responses": {
           "200": {
@@ -58,15 +50,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "status"
-                  ],
+                  "required": ["status"],
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "ready"
-                      ]
+                      "enum": ["ready"]
                     }
                   },
                   "additionalProperties": false
@@ -80,12 +68,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -119,11 +102,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -153,9 +132,7 @@
       "post": {
         "operationId": "createUser",
         "summary": "Create a new login",
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "description": "Creates a user with a unique (case-insensitive) username. Uniqueness is enforced atomically in Redis (SET NX) — concurrent duplicate registrations cannot race.",
         "requestBody": {
           "required": true,
@@ -163,10 +140,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "username",
-                  "password"
-                ],
+                "required": ["username", "password"],
                 "properties": {
                   "username": {
                     "type": "string",
@@ -194,16 +168,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "user"
-                  ],
+                  "required": ["user"],
                   "properties": {
                     "user": {
                       "type": "object",
-                      "required": [
-                        "username",
-                        "createdAt"
-                      ],
+                      "required": ["username", "createdAt"],
                       "properties": {
                         "username": {
                           "type": "string"
@@ -227,12 +196,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -266,11 +230,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -299,12 +259,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -338,11 +293,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -371,12 +322,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -410,11 +356,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -443,12 +385,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -482,11 +419,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -515,12 +448,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -554,11 +482,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -587,12 +511,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -626,11 +545,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -660,9 +575,7 @@
       "post": {
         "operationId": "login",
         "summary": "Verify a username/password pair",
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "description": "Returns 200 when the credentials are valid and 401 otherwise. Unknown-username and wrong-password failures are indistinguishable by response AND by timing (dummy Argon2id verification). Failed attempts are rate limited per username; the counter clears on success.",
         "requestBody": {
           "required": true,
@@ -670,10 +583,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "username",
-                  "password"
-                ],
+                "required": ["username", "password"],
                 "properties": {
                   "username": {
                     "type": "string",
@@ -698,22 +608,15 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "authenticated",
-                    "user"
-                  ],
+                  "required": ["authenticated", "user"],
                   "properties": {
                     "authenticated": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     },
                     "user": {
                       "type": "object",
-                      "required": [
-                        "username"
-                      ],
+                      "required": ["username"],
                       "properties": {
                         "username": {
                           "type": "string"
@@ -733,12 +636,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -772,11 +670,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -805,12 +699,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -844,11 +733,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -877,12 +762,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -916,11 +796,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -949,12 +825,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -988,11 +859,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"
@@ -1021,12 +888,7 @@
               "application/problem+json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status",
-                    "code"
-                  ],
+                  "required": ["type", "title", "status", "code"],
                   "properties": {
                     "type": {
                       "type": "string",
@@ -1060,11 +922,7 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": [
-                          "field",
-                          "rule",
-                          "message"
-                        ],
+                        "required": ["field", "rule", "message"],
                         "properties": {
                           "field": {
                             "type": "string"

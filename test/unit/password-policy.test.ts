@@ -40,6 +40,13 @@ describe('validatePassword (NIST SP 800-63B-4)', () => {
     );
   });
 
+  it('applies the username-containment check down to the 3-char minimum', () => {
+    // Boundary: a 3-character username must still be screened for.
+    expect(rules('my bob is a great passphrase', { ...policy, username: 'bob' })).toContain(
+      'contains_username',
+    );
+  });
+
   it('treats NFC and NFD encodings of the same password identically', () => {
     const composed = 'café con leche por favor'; // é as one code point
     const decomposed = 'café con leche por favor'; // e + combining acute
