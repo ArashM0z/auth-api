@@ -32,6 +32,12 @@ function report(result: autocannon.Result): void {
     `req/s avg ${String(requests.average)} | latency p50 ${String(latency.p50)}ms ` +
       `p99 ${String(latency.p99)}ms | non-2xx ${String(non2xx)}\n`,
   );
+  if (non2xx > 0) {
+    process.stdout.write(
+      '⚠ non-2xx responses — the per-IP rate limiter is throttling the bench.\n' +
+        '  Restart with: RATE_LIMIT_IP_MAX=1000000 docker compose up -d\n',
+    );
+  }
 }
 
 await ensureUser();

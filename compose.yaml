@@ -24,6 +24,9 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: info
+      # Overridable so the benchmark can measure Argon2id throughput instead
+      # of the IP rate limiter: RATE_LIMIT_IP_MAX=1000000 docker compose up -d
+      RATE_LIMIT_IP_MAX: ${RATE_LIMIT_IP_MAX:-100}
     ports:
       - '3000:3000'
     depends_on:
