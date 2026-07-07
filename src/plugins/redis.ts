@@ -19,12 +19,8 @@ export async function connectRedis(app: FastifyInstance, url: string): Promise<A
     app.log.error({ err }, 'redis client error');
   });
   await client.connect();
-  // Tear the socket down when Fastify closes. close-with-grace has already
-  // drained in-flight requests by this point, so there are no pending Redis
-  // commands to flush — destroy() closes the connection immediately rather
-  // than issuing a QUIT command.
-  app.addHook('onClose', () => {
-    if (client.isOpen) client.destroy();
-  });
+  // The client's lifecycle is owned by the composition root (server.ts closes
+  // it during graceful shutdown), not by a Fastify hook — a request pipeline
+  // never touches the connection lifecycle.
   return client;
 }

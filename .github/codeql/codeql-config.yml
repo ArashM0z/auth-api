@@ -1,0 +1,9 @@
+name: CodeQL config
+
+# Analyze only shipped application code. Tests, benchmarks, and one-off
+# maintenance scripts are not part of the deployed artifact, so scanning them
+# adds noise (e.g. test harness lifecycle hooks) without protecting production.
+paths-ignore:
+  - test
+  - bench
+  - scripts
