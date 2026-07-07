@@ -6,7 +6,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_ecs_cluster" "main" {
-  name = var.project_name
+  name = local.name_prefix
 
   setting {
     name  = "containerInsights"
@@ -16,8 +16,8 @@ resource "aws_ecs_cluster" "main" {
 
 resource "aws_cloudwatch_log_group" "app" {
   #checkov:skip=CKV_AWS_158:Default SSE is adequate for demo app logs; a KMS CMK adds key cost and IAM complexity without a confidentiality requirement here.
-  #checkov:skip=CKV_AWS_338:30-day retention is a deliberate cost/compliance trade-off for a demo (var.log_retention_days); regulated workloads would set 365+.
-  name              = "/ecs/${var.project_name}"
+  #checkov:skip=CKV_AWS_338:Retention is a deliberate per-env cost/compliance trade-off (var.log_retention_days: 7/14/30d for dev/staging/prod); regulated workloads would set 365+.
+  name              = "/ecs/${local.name_prefix}"
   retention_in_days = var.log_retention_days
 }
 
@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "ecs_tasks_assume" {
 }
 
 resource "aws_iam_role" "task_execution" {
-  name               = "${var.project_name}-task-execution"
+  name               = "${local.name_prefix}-task-execution"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
 }
 
@@ -48,33 +48,50 @@ resource "aws_iam_role_policy_attachment" "task_execution_managed" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# Scoped to the single parameter the task consumes — not ssm:* or a path
-# wildcard. Decryption uses the AWS-managed aws/ssm key, whose key policy
-# already permits use via SSM, so no explicit kms:Decrypt grant is needed.
-data "aws_iam_policy_document" "read_redis_url" {
+# The execution role reads exactly what the container's `secrets` block injects
+# at task start, and nothing more:
+#   * secretsmanager:GetSecretValue on the REDIS_URL secret ONLY (not the raw
+#     auth-token secret, which the task never reads, and not "*").
+#   * ssm:GetParameters on the three config parameter ARNs that are injected —
+#     not ssm:* and not a path wildcard.
+# Decryption uses the AWS-managed aws/secretsmanager and aws/ssm keys, whose
+# key policies already permit use via those services, so NO explicit kms:Decrypt
+# grant is needed. With a customer-managed CMK you would add a statement:
+#   actions=["kms:Decrypt"], resources=[<cmk-arn>].
+data "aws_iam_policy_document" "task_execution_secrets" {
   statement {
-    sid       = "ReadRedisUrlParameter"
-    actions   = ["ssm:GetParameters"]
-    resources = [aws_ssm_parameter.redis_url.arn]
+    sid       = "ReadRedisUrlSecret"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.redis_url.arn]
+  }
+
+  statement {
+    sid     = "ReadConfigParameters"
+    actions = ["ssm:GetParameters"]
+    resources = [
+      aws_ssm_parameter.log_level.arn,
+      aws_ssm_parameter.trust_proxy.arn,
+      aws_ssm_parameter.password_min_length.arn,
+    ]
   }
 }
 
-resource "aws_iam_role_policy" "task_execution_read_redis_url" {
-  name   = "read-redis-url-parameter"
+resource "aws_iam_role_policy" "task_execution_secrets" {
+  name   = "read-secrets-and-config"
   role   = aws_iam_role.task_execution.id
-  policy = data.aws_iam_policy_document.read_redis_url.json
+  policy = data.aws_iam_policy_document.task_execution_secrets.json
 }
 
 # No policies attached: the application requires zero AWS API access.
 resource "aws_iam_role" "task" {
-  name               = "${var.project_name}-task"
+  name               = "${local.name_prefix}-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
 }
 
 # --- Task definition ----------------------------------------------------------
 
 resource "aws_ecs_task_definition" "app" {
-  family                   = var.project_name
+  family                   = local.name_prefix
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = var.container_cpu
@@ -92,7 +109,7 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([
     {
-      name      = var.project_name
+      name      = local.name_prefix
       image     = "${aws_ecr_repository.app.repository_url}:${var.app_image_tag}"
       essential = true
 
@@ -103,23 +120,39 @@ resource "aws_ecs_task_definition" "app" {
         }
       ]
 
+      # Only truly static, non-sensitive infra facts are inline env. Everything
+      # that varies by environment (config) or is sensitive (secret) is injected
+      # via `secrets` below from SSM Parameter Store / Secrets Manager instead.
       environment = [
         # Bind beyond loopback so the ALB can reach the container.
         { name = "HOST", value = "0.0.0.0" },
-        { name = "PORT", value = "3000" },
-        # Behind the ALB, client IPs arrive in X-Forwarded-For; the app's
-        # per-IP rate limiting is meaningless without this.
-        { name = "TRUST_PROXY", value = "true" },
-        { name = "PASSWORD_MIN_LENGTH", value = tostring(var.password_min_length) }
+        { name = "PORT", value = "3000" }
       ]
 
-      # Injected by the ECS agent at task start via the execution role —
-      # the credential never appears in the task definition, console, or
-      # `describe-task-definition` output.
+      # Injected by the ECS agent at task start via the execution role — values
+      # never appear in the task definition, console, or `describe-task-definition`.
+      # ECS resolves both Secrets Manager secret ARNs and SSM parameter ARNs
+      # here, which lets us keep the config/secret split at the source of truth:
+      #   * REDIS_URL           -> Secrets Manager  (secret, embeds AUTH token)
+      #   * LOG_LEVEL           -> SSM Parameter Store String (non-secret config)
+      #   * TRUST_PROXY         -> SSM Parameter Store String (non-secret config)
+      #   * PASSWORD_MIN_LENGTH -> SSM Parameter Store String (non-secret config)
       secrets = [
         {
           name      = "REDIS_URL"
-          valueFrom = aws_ssm_parameter.redis_url.arn
+          valueFrom = aws_secretsmanager_secret.redis_url.arn
+        },
+        {
+          name      = "LOG_LEVEL"
+          valueFrom = aws_ssm_parameter.log_level.arn
+        },
+        {
+          name      = "TRUST_PROXY"
+          valueFrom = aws_ssm_parameter.trust_proxy.arn
+        },
+        {
+          name      = "PASSWORD_MIN_LENGTH"
+          valueFrom = aws_ssm_parameter.password_min_length.arn
         }
       ]
 
@@ -156,7 +189,7 @@ resource "aws_ecs_task_definition" "app" {
 
 resource "aws_ecs_service" "app" {
   #checkov:skip=CKV_AWS_333:Public IPs are required for image pull/logs/SSM egress because the demo runs tasks in public subnets instead of paying ~USD 65+/mo for NAT (see network.tf); ingress is still ALB-only via security groups.
-  name            = var.project_name
+  name            = local.name_prefix
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
   desired_count   = var.desired_count
@@ -170,7 +203,7 @@ resource "aws_ecs_service" "app" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.app.arn
-    container_name   = var.project_name
+    container_name   = local.name_prefix
     container_port   = 3000
   }
 

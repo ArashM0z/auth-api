@@ -201,9 +201,27 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
   window); production notes (RDB+AOF, or Postgres as system of record) in
   [SECURITY.md](SECURITY.md) and [docs/architecture.md](docs/architecture.md).
 
+## Observability
+
+- **Prometheus metrics** at `GET /metrics` (always on; scrape internally
+  only): default Node/process metrics plus domain signals — auth attempts by
+  outcome, users created, rate-limit rejections by scope, password rehashes,
+  and **Argon2id queue-depth gauges** (`authapi_hash_active` /
+  `authapi_hash_queued`) that tell you to scale out _before_ logins start to
+  queue.
+- **OpenTelemetry tracing** via `@fastify/otel` — **opt-in**: dormant unless
+  `OTEL_EXPORTER_OTLP_ENDPOINT` (or `OTEL_ENABLED=true`) is set, so local runs
+  and tests need no collector. When enabled, every request is a span; the
+  `X-Request-Id` correlation id already threads logs, metrics context, and
+  traces together. Point it at any OTLP collector (Jaeger, Tempo, Honeycomb):
+
+  ```bash
+  OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 docker compose up
+  ```
+
 ## Testing
 
-**61 tests, ~96% line coverage** (thresholds enforced in CI), in four layers:
+**74 tests, ~96% line coverage** (thresholds enforced in CI), in five layers:
 
 1. **Unit** — password policy, username normalization, problem registry.
 2. **Property-based** (fast-check) — thousands of adversarial Unicode inputs
@@ -213,7 +231,14 @@ memory price. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -d && npm r
    suite runs on a laptop and in CI) — including the concurrent-duplicate
    race, the byte-identical-401 assertion, rehash-on-login, both rate
    limiters, and every protocol edge (405+Allow, 413, 415, malformed JSON).
-4. **Contract** — live responses validated against the _committed_
+4. **Security** ([test/integration/security.test.ts](test/integration/security.test.ts))
+   — the executable form of [SECURITY.md](SECURITY.md): each test is an
+   attack that must fail. Enumeration (identical body **and** headers),
+   **timing** (measured: unknown-user vs wrong-password medians within
+   tolerance under realistic Argon2id cost — a skipped hash would fail it),
+   Redis-key injection, mass assignment, CRLF request-id injection, credential
+   leakage, and payload exhaustion.
+5. **Contract** — live responses validated against the _committed_
    `openapi.json`, which CI regenerates and diffs, so docs cannot lie.
 
 ```bash
@@ -232,12 +257,26 @@ zero devDependencies and runs as uid 1000, enforced in CI). Plus
 [CodeQL](.github/workflows/codeql.yml) security analysis and
 [Dependabot](.github/dependabot.yml) across npm/actions/docker/terraform.
 
-**Infrastructure as code** ([infra/](infra/)): OpenTofu for AWS —
-ECR (scan-on-push) → ECS Fargate behind an ALB (health-checked on
-`/readyz`) → ElastiCache Redis with encryption at rest + in transit and
-auth token via SSM, target-tracking autoscaling. Statically validated
-(`tofu validate`, `tflint`, `checkov`) in [iac.yml](.github/workflows/iac.yml);
-deliberately **not applied** — the demo stays zero-cost. See
+**Infrastructure as code — [OpenTofu](https://opentofu.org)** ([infra/](infra/)).
+OpenTofu is the Linux Foundation's open-source (MPL-2.0) fork of Terraform,
+created after HashiCorp's 2023 move to the BUSL source-available license — the
+right default now for new IaC that wants to stay truly open, and drop-in
+compatible with the HCL and provider ecosystem. The stack: ECR (scan-on-push,
+immutable tags) → ECS Fargate behind an ALB (health-checked on `/readyz`) →
+ElastiCache Redis (encryption at rest + in transit), target-tracking
+autoscaling, least-privilege IAM.
+
+- **Multi-environment** (`dev` / `staging` / `prod`) via per-env tfvars and
+  env-scoped resource names, with per-environment state (ideally per-env AWS
+  accounts) — see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+- **Secrets** live in **AWS Secrets Manager** (rotatable, audited); **config**
+  lives in **SSM Parameter Store**; nothing sensitive is ever in plain env or
+  committed files.
+- **Security-tested IaC**: native `tofu test` assertions (encryption on,
+  security-group restrictions, immutable/scanned images, no secret in outputs)
+  plus `tflint` and `checkov`, all in [iac.yml](.github/workflows/iac.yml).
+
+Deliberately **validated but not applied** — the demo stays zero-cost. See
 [infra/README.md](infra/README.md).
 
 ## Design decisions
@@ -260,9 +299,8 @@ Architecture overview (arc42-structured, with diagrams):
 
 **Considered and deferred** (one line each, reasoning in SECURITY.md):
 `Idempotency-Key` (IETF draft expired 2026-04), `Server-Timing` (rejected —
-timing oracle), CORS (no browser callers), OpenTelemetry traces, HIBP
-breached-password API, sliding-window limiter, `GET /users/:name`
-(rejected — enumeration endpoint).
+timing oracle), CORS (no browser callers), HIBP breached-password API,
+sliding-window limiter, `GET /users/:name` (rejected — enumeration endpoint).
 
 ## Approach & AI workflow
 

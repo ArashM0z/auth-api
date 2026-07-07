@@ -13,7 +13,21 @@ output "ecs_cluster_name" {
   value       = aws_ecs_cluster.main.name
 }
 
-output "redis_url_ssm_parameter_name" {
-  description = "SSM parameter holding the rediss:// connection URL (SecureString; value intentionally not output)."
-  value       = aws_ssm_parameter.redis_url.name
+output "environment" {
+  description = "The environment this state manages (dev/staging/prod)."
+  value       = var.environment
+}
+
+# ARNs (not values) only: a consumer resolves the actual secret/config at
+# runtime with its own IAM grant. The rediss:// URL and the AUTH token are
+# NEVER emitted as outputs — outputs land in state and `tofu output`, so a
+# secret here would leak. This is asserted in tests/security.tftest.hcl.
+output "redis_url_secret_arn" {
+  description = "Secrets Manager ARN of the REDIS_URL secret (value intentionally NOT output)."
+  value       = aws_secretsmanager_secret.redis_url.arn
+}
+
+output "config_parameter_path" {
+  description = "SSM Parameter Store path prefix holding non-secret config for this environment."
+  value       = local.config_path
 }

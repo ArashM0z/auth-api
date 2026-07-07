@@ -71,6 +71,12 @@ findings, which are the main failure mode of AI review.
 - The benchmark being throttled by our own IP rate limiter — resolved with
   an env override and a warning in the bench output (the limiter working
   was the correct behavior).
+- **A mutation-testing probe removed the dummy-hash verification** (the
+  timing-attack defense) to check whether the suite would notice. The
+  security timing test — which asserts both login paths spend a full
+  Argon2id verification — catches exactly this, confirming the defense has a
+  real executable regression guard rather than just a comment. (The probe
+  was reverted; the guard stays.)
 
 ## Cost of the approach
 
