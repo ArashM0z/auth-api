@@ -4,7 +4,7 @@ import type { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import underPressure from '@fastify/under-pressure';
 import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
+import scalarApiReference from '@scalar/fastify-api-reference';
 import type { AppConfig } from './config.js';
 import { connectRedis } from './plugins/redis.js';
 import type { AppRedis } from './plugins/redis.js';
@@ -92,7 +92,7 @@ export async function buildApp(
   // ---- security & resilience -------------------------------------------
   await app.register(helmet, {
     // The API itself serves only JSON (CSP is a non-event for it); the CSP
-    // would break the self-hosted Swagger UI at /docs. Documented tradeoff.
+    // would break the self-hosted Scalar API reference at /docs. Documented tradeoff.
     contentSecurityPolicy: false,
   });
 
@@ -133,7 +133,13 @@ export async function buildApp(
       ],
     },
   });
-  await app.register(swaggerUi, { routePrefix: '/docs' });
+  // Scalar renders the same OpenAPI document as a modern, searchable API
+  // reference with a built-in request playground (successor to Swagger UI).
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Scalar's plugin export is loosely typed
+  await app.register(scalarApiReference, {
+    routePrefix: '/docs',
+    configuration: { title: 'Authentication API', content: () => app.swagger() },
+  });
 
   // ---- dependencies ------------------------------------------------------
   const redis = overrides.redis ?? (await connectRedis(app, config.redisUrl));

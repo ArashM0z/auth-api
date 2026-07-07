@@ -21,7 +21,7 @@ OWASP Password Storage Cheat Sheet) rather than folklore.
 docker compose up --build        # API on :3000, Redis with AOF durability
 ```
 
-- Interactive docs (Swagger UI): **http://localhost:3000/docs**
+- Interactive docs ([Scalar](https://github.com/scalar/scalar) API reference): **http://localhost:3000/docs**
 - Machine-readable contract: [`openapi.json`](openapi.json) (also served at `/docs/json`)
 - Click-to-run requests: [`requests.http`](requests.http) (VS Code REST Client / JetBrains)
 - Generated TypeScript client types for consumers: [`client/api.d.ts`](client/api.d.ts)

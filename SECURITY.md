@@ -48,7 +48,7 @@ Standards are cited by name so every choice is auditable, not aesthetic.
 - **Redis as primary store** is mandated by the brief. With AOF everysec the
   crash-loss window is ~1s of registrations. A production system of record
   would be Postgres, with Redis for rate limiting and sessions.
-- **CSP disabled globally** so the self-hosted Swagger UI at `/docs` works;
+- **CSP disabled globally** so the self-hosted Scalar API reference at `/docs` works;
   the API surface itself is JSON-only where CSP does not apply. A production
   hardening pass would scope CSP per route or host docs separately.
 - **Timing equalization is exact only while hash parameters are uniform.**

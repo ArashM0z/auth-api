@@ -33,8 +33,12 @@ describe('probes', () => {
     await doomed.close();
   });
 
-  it('serves interactive API docs at /docs and the OpenAPI document', async () => {
-    const docs = await app.inject({ method: 'GET', url: '/docs' });
-    expect([200, 302]).toContain(docs.statusCode);
+  it('serves the Scalar API reference at /docs', async () => {
+    // Scalar redirects /docs → /docs/ then renders the reference UI.
+    const redirect = await app.inject({ method: 'GET', url: '/docs' });
+    expect([301, 302, 308]).toContain(redirect.statusCode);
+    const ui = await app.inject({ method: 'GET', url: '/docs/' });
+    expect(ui.statusCode).toBe(200);
+    expect(ui.body).toContain('Scalar');
   });
 });
