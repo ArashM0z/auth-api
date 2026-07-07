@@ -1,0 +1,54 @@
+name: LocalStack infra test
+
+# Provisions the full AWS stack on LocalStack Pro and asserts it comes up —
+# an integration test for the Terraform, no billable AWS. Manual trigger
+# (uses the Pro trial), and needs a LOCALSTACK_AUTH_TOKEN repository secret.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    name: Provision the stack on LocalStack
+    runs-on: ubuntu-latest
+    env:
+      LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+      AWS_DEFAULT_REGION: ca-central-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      TF_CMD: tofu
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_wrapper: false
+
+      - name: Start LocalStack (Pro)
+        uses: localstack/setup-localstack@v0.2.3
+        with:
+          image-tag: latest
+          install-awslocal: 'true'
+
+      - name: Install tflocal
+        run: pip install terraform-local
+
+      - name: Apply the infrastructure to LocalStack
+        working-directory: infra
+        run: |
+          tflocal init -input=false
+          tflocal apply -input=false -auto-approve -var-file=environments/dev.tfvars
+
+      - name: Assert the key resources exist
+        run: |
+          set -e
+          echo "VPCs:        $(awslocal ec2 describe-vpcs --query 'length(Vpcs)' --output text)"
+          echo "Subnets:     $(awslocal ec2 describe-subnets --query 'length(Subnets)' --output text)"
+          echo "ECS cluster: $(awslocal ecs list-clusters --query 'clusterArns[0]' --output text)"
+          echo "ElastiCache: $(awslocal elasticache describe-replication-groups --query 'ReplicationGroups[0].ReplicationGroupId' --output text)"
+          echo "Load bal.:   $(awslocal elbv2 describe-load-balancers --query 'LoadBalancers[0].LoadBalancerName' --output text)"
+          echo "Route 53:    $(awslocal route53 list-hosted-zones --query 'HostedZones[0].Name' --output text)"
+          echo "API Gateway: $(awslocal apigatewayv2 get-apis --query 'Items[0].Name' --output text)"
+          echo "Secrets:     $(awslocal secretsmanager list-secrets --query 'length(SecretList)' --output text)"
