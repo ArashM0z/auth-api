@@ -34,7 +34,7 @@ export function registerHealthRoutes(instance: FastifyInstance, redis: AppRedis)
     {
       schema: {
         operationId: 'liveness',
-        tags: ['ops'],
+        tags: ['Operations'],
         summary: 'Liveness probe (process is up)',
         description:
           'Always 200 while the process can serve requests. Used by orchestrators to decide restarts; does not check dependencies.',
@@ -50,7 +50,7 @@ export function registerHealthRoutes(instance: FastifyInstance, redis: AppRedis)
     {
       schema: {
         operationId: 'readiness',
-        tags: ['ops'],
+        tags: ['Operations'],
         summary: 'Readiness probe (Redis reachable)',
         description:
           '200 while Redis answers PING within 1s, 503 otherwise. Used by load balancers to stop routing to an instance that lost its datastore.',

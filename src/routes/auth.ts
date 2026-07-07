@@ -55,7 +55,7 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: AuthRouteDep
     {
       schema: {
         operationId: 'login',
-        tags: ['auth'],
+        tags: ['Authentication'],
         summary: 'Verify a username/password pair',
         description:
           'Returns 200 when the credentials are valid and 401 otherwise. Unknown-username and wrong-password failures are indistinguishable by response AND by timing (dummy Argon2id verification). Failed attempts are rate limited per username; the counter clears on success.',
