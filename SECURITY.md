@@ -51,6 +51,18 @@ Standards are cited by name so every choice is auditable, not aesthetic.
 - **CSP disabled globally** so the self-hosted Swagger UI at `/docs` works;
   the API surface itself is JSON-only where CSP does not apply. A production
   hardening pass would scope CSP per route or host docs separately.
+- **Timing equalization is exact only while hash parameters are uniform.**
+  The unknown-user path verifies against a boot-time dummy hash built with
+  the _current_ Argon2id parameters. If an operator later _raises_ those
+  parameters, an existing user whose stored hash still encodes the older,
+  cheaper parameters (and who has not yet logged in successfully to trigger
+  rehash-on-login) verifies slightly faster than the unknown-user path —
+  a narrow, transient enumeration signal for that specific account class.
+  It is bounded by the per-username failure limiter (≈10 samples / 15 min)
+  and drains as accounts re-authenticate. The robust closure — a constant
+  minimum handler time, or a dummy hash pinned to the weakest deployed
+  parameters — is listed in future work; a parameter bump should be paired
+  with a forced-rehash migration. (Surfaced by the adversarial review.)
 
 ## Required before real production (annotated future work)
 
