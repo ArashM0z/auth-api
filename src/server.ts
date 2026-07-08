@@ -17,6 +17,8 @@ closeWithGrace({ delay: 10_000 }, async ({ err }) => {
     app.log.error({ err }, 'shutting down after fatal error');
   }
   await app.close();
+  // Requests are drained by now; tear the Redis socket down directly.
+  if (app.redis.isOpen) app.redis.destroy();
   if (tracing !== undefined) await tracing.shutdown();
 });
 
@@ -25,5 +27,6 @@ try {
 } catch (err) {
   app.log.fatal({ err }, 'failed to start server');
   await app.close();
+  if (app.redis.isOpen) app.redis.destroy();
   process.exitCode = 1;
 }

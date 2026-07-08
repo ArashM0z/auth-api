@@ -19,6 +19,11 @@ export async function makeApp(env: Record<string, string> = {}): Promise<Fastify
     ...env,
   });
   const app = await buildApp(config);
+  // Production closes Redis in server.ts's shutdown path; tests tear apps down
+  // with app.close(), so release the test client alongside the instance.
+  app.addHook('onClose', () => {
+    if (app.redis.isOpen) app.redis.destroy();
+  });
   await app.ready();
   return app;
 }
