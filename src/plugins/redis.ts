@@ -19,8 +19,12 @@ export async function connectRedis(app: FastifyInstance, url: string): Promise<A
     app.log.error({ err }, 'redis client error');
   });
   await client.connect();
-  app.addHook('onClose', async () => {
-    if (client.isOpen) await client.quit();
+  // Tear the socket down when Fastify closes. close-with-grace has already
+  // drained in-flight requests by this point, so there are no pending Redis
+  // commands to flush — destroy() closes the connection immediately rather
+  // than issuing a QUIT command.
+  app.addHook('onClose', () => {
+    if (client.isOpen) client.destroy();
   });
   return client;
 }
