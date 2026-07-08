@@ -10,6 +10,10 @@ validate requests at runtime, and CI fails if the committed spec drifts.
 Security decisions cite the standards they implement (NIST SP 800-63B-4,
 OWASP Password Storage Cheat Sheet) rather than folklore.
 
+> **Architecture:** a structured [**arc42 overview**](docs/arc42.md) — skimmable in
+> ~5 minutes — ties together the security model, building blocks, runtime flows,
+> deployment, quality scenarios, and the ADRs.
+>
 > **Contents:** [Quickstart](#quickstart) · [API](#api) · [Errors](#error-model) ·
 > [Security](#security-model) · [Performance](#measured-performance) ·
 > [Scaling](#scalability) · [Testing](#testing) · [CI/CD](#cicd--infrastructure) ·
