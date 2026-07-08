@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs on a PR branch; never cancel a run on main.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   quality:
     name: Lint, typecheck & API contract
