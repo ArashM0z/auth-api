@@ -11,7 +11,9 @@
   "overrides": {
     "openapi-typescript": {
       "typescript": "$typescript"
-    }
+    },
+    "qs": ">=6.15.2",
+    "uuid": ">=11.1.1"
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
