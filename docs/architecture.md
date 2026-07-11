@@ -99,10 +99,14 @@ error handlers → routes.
   **AWS Secrets Manager** and non-secret config from **SSM Parameter Store**
   (see [CONFIGURATION.md](CONFIGURATION.md)); `TRUST_PROXY=true` so client IPs
   come from the ALB. Multi-environment (dev/staging/prod) with per-env state.
-- **Docs (GitHub Pages)**: `docs.yml` builds the MkDocs handbook and deploys
-  the combined site on every push to `main` — landing tour at
-  [arashm0z.github.io/auth-api](https://arashm0z.github.io/auth-api/), this
+- **Docs (GitHub Pages)**: `docs.yml` builds the React + TypeScript landing
+  app (`web/`, Vite — typed against the generated OpenAPI client) and this
+  MkDocs handbook, and deploys the combined site on every push to `main` —
+  landing tour at [arashm0z.github.io/auth-api](https://arashm0z.github.io/auth-api/),
   handbook at [/docs/](https://arashm0z.github.io/auth-api/docs/).
+- **Application delivery**: a dev → staging → prod promotion pipeline (one
+  immutable image, OIDC, production behind an approval gate) — see
+  [Deployment](DEPLOYMENT.md).
 
 ## 7. Crosscutting concepts
 
