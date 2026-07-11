@@ -166,6 +166,30 @@
         gap: 10px;
         margin-right: auto;
       }
+      /* site-wide nav: every page of the site is one click away */
+      .xnav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .xnav a {
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 5px 9px;
+        border-radius: 6px;
+      }
+      .xnav a:hover {
+        color: var(--accent-strong);
+        background: var(--accent-wash);
+        text-decoration: none;
+      }
+      .xnav a.here {
+        color: var(--accent-strong);
+        border: 1px solid var(--accent);
+      }
       .brand .mark {
         font-family: var(--mono);
         font-size: 0.74rem;
@@ -910,6 +934,15 @@
             <span class="sub">Authentication API · every subsystem as a diagram</span>
           </div>
         </div>
+        <nav class="xnav" aria-label="Site">
+          <a href="index.html">Architecture</a>
+          <a href="api.html">API reference</a>
+          <a href="playground.html">Playground</a>
+          <a href="ratelimit.html">Rate limiter</a>
+          <a class="here" href="visual-guide.html">Visual guide</a>
+          <a href="https://arashm0z.github.io/auth-api/docs/">Docs</a>
+          <a href="https://github.com/ArashM0z/auth-api">GitHub ↗</a>
+        </nav>
         <button class="btn" id="themeToggle" aria-label="Toggle theme">Theme</button>
       </div>
     </header>
