@@ -1,0 +1,164 @@
+/* ---------------------------------------------------------------------------
+   Handbook design layer over Material for MkDocs.
+   Works in both color schemes: shared rules use Material's --md-* tokens;
+   scheme-specific tuning hangs off [data-md-color-scheme="..."].
+   --------------------------------------------------------------------------- */
+
+:root {
+  --hb-radius: 10px;
+  --hb-accent: var(--md-accent-fg-color);
+}
+
+/* Slightly larger, calmer reading measure */
+.md-typeset {
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+/* ---- headings: tighter, with a quiet structural marker ------------------- */
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--md-default-fg-color);
+}
+.md-typeset h2 {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+.md-typeset h2::before {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-right: 0.45em;
+  border-radius: 3px;
+  background: var(--md-primary-fg-color);
+  transform: translateY(-0.05em) rotate(45deg);
+}
+.md-typeset h3 {
+  font-weight: 640;
+}
+
+/* ---- tables: the workhorse — rounded, hoverable, scannable --------------- */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: var(--hb-radius);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  font-size: 0.72rem;
+}
+.md-typeset table:not([class]) th {
+  background: var(--md-code-bg-color);
+  color: var(--md-default-fg-color);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid var(--md-primary-fg-color);
+  padding: 0.7em 1em;
+}
+.md-typeset table:not([class]) td {
+  padding: 0.65em 1em;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  vertical-align: top;
+}
+.md-typeset table:not([class]) tbody tr {
+  transition: background-color 0.12s ease;
+}
+.md-typeset table:not([class]) tbody tr:hover {
+  background: var(--md-accent-fg-color--transparent);
+  box-shadow: none;
+}
+/* first column reads as the row's key */
+.md-typeset table:not([class]) td:first-child {
+  font-weight: 570;
+  color: var(--md-default-fg-color);
+}
+
+/* ---- code: softer, rounded ----------------------------------------------- */
+.md-typeset code {
+  border-radius: 5px;
+  padding: 0.1em 0.4em;
+}
+.md-typeset pre > code {
+  border-radius: var(--hb-radius);
+  padding: 0.9em 1.1em;
+  line-height: 1.55;
+}
+.md-typeset pre {
+  border-radius: var(--hb-radius);
+}
+
+/* ---- landing cards on the home page --------------------------------------- */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid.cards > :is(ol, ul) > li {
+  border-radius: var(--hb-radius);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid.cards > :is(ol, ul) > li:hover {
+  transform: translateY(-2px);
+  border-color: var(--md-primary-fg-color);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.md-typeset .grid.cards hr {
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* ---- blockquotes & admonitions: teal spine, rounded ----------------------- */
+.md-typeset blockquote {
+  border-left: 3px solid var(--md-primary-fg-color);
+  border-radius: 0 8px 8px 0;
+  background: var(--md-code-bg-color);
+  padding: 0.6em 1em;
+  color: var(--md-default-fg-color--light);
+}
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: var(--hb-radius);
+  border-width: 1px;
+}
+
+/* ---- mermaid diagrams: give them a stage ---------------------------------- */
+.md-typeset .mermaid {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: var(--hb-radius);
+  background: var(--md-code-bg-color);
+  margin: 1.2em 0;
+}
+
+/* ---- navigation: clearer hierarchy ---------------------------------------- */
+.md-nav__item .md-nav__link--active,
+.md-nav__item .md-nav__link--active code {
+  font-weight: 700;
+}
+.md-nav__title {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+}
+
+/* ---- header: subtle depth -------------------------------------------------- */
+.md-header {
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- scheme-specific tuning ------------------------------------------------ */
+[data-md-color-scheme='slate'] {
+  /* teal-biased dark surfaces instead of pure grey */
+  --md-default-bg-color: #10151c;
+  --md-code-bg-color: #171e27;
+}
+[data-md-color-scheme='slate'] .md-typeset table:not([class]) {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+[data-md-color-scheme='default'] .md-typeset .mermaid {
+  background: #f6f8fa;
+}
