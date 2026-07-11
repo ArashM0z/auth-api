@@ -97,3 +97,20 @@ jobs:
         run: |
           uid="$(docker run --rm --entrypoint node auth-api:ci -e 'console.log(process.getuid())')"
           test "$uid" = "1000"
+
+  landing:
+    name: Landing app (typecheck & build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # The React + TypeScript landing (web/) is typed against the generated
+      # OpenAPI client, so a contract change that breaks the UI fails here.
+      - working-directory: web
+        run: npm ci --no-audit --no-fund
+      - working-directory: web
+        run: npm run build # tsc --noEmit && vite build

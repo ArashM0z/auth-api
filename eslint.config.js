@@ -5,7 +5,9 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist/', 'coverage/', 'node_modules/', 'client/api.d.ts', 'infra/'] },
+  // web/ (the React landing) lints with its own profile — react-hooks rules
+  // and browser globals don't belong in the backend's; see web/eslint.config.js.
+  { ignores: ['dist/', 'coverage/', 'node_modules/', 'client/api.d.ts', 'infra/', 'web/', 'pages-dist/'] },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
