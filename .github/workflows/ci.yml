@@ -20,8 +20,8 @@ jobs:
     name: Lint, typecheck & API contract
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -38,8 +38,8 @@ jobs:
     name: Tests (unit + property + integration vs real Redis)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -47,7 +47,7 @@ jobs:
       # Testcontainers spins up redis:8-alpine using the runner's Docker —
       # the identical suite runs on a laptop and in CI.
       - run: npm run test:coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -58,8 +58,8 @@ jobs:
     name: Mutation testing (test quality)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -68,7 +68,7 @@ jobs:
       # doesn't kill enough mutants — coverage measures lines run, this
       # measures whether the assertions actually catch regressions.
       - run: npm run test:mutation
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report
@@ -79,8 +79,8 @@ jobs:
     name: Dependency audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -91,7 +91,7 @@ jobs:
     name: Production image builds & runs as non-root
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: docker build --target prod -t auth-api:ci .
       - name: Image must not run as root
         run: |
@@ -102,8 +102,8 @@ jobs:
     name: Landing app (typecheck & build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
