@@ -1,0 +1,67 @@
+name: deploy
+
+# Stage one of the promotion pipeline: merge to main → build ONCE → deploy dev.
+#
+# The build runs only on push events and always tags the pushed commit's SHA,
+# so image provenance is source-only (Checkov CKV_GHA_7: no workflow_dispatch
+# inputs exist here — staging/prod promotions are separate, zero-input
+# workflows: promote-staging.yml and promote-prod.yml).
+#
+# Authentication is OIDC — no long-lived AWS keys anywhere. ECR enforces
+# immutable tags, so later promotions redeploy the EXACT bytes dev ran.
+#
+# The pipeline is inert until the repository variable DEPLOY_ENABLED is
+# 'true' and each GitHub environment defines AWS_ROLE_ARN / AWS_REGION /
+# TF_STATE_BUCKET — this project deliberately never deploys to billable AWS
+# (the stack is exercised end-to-end on LocalStack instead; localstack.yml).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'infra/**'
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-env.yml'
+
+permissions:
+  contents: read
+  id-token: write # OIDC federation to AWS — no stored credentials
+
+concurrency:
+  group: deploy-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & push image (tag = git SHA, immutable)
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push
+        run: |
+          repo="${{ steps.ecr.outputs.registry }}/auth-api"
+          docker build --target prod -t "$repo:${{ github.sha }}" .
+          docker push "$repo:${{ github.sha }}"
+
+  deploy-dev:
+    name: Deploy dev (automatic)
+    needs: [build]
+    uses: ./.github/workflows/deploy-env.yml
+    secrets: inherit
+    with:
+      environment: dev
+      image_tag: ${{ github.sha }}

@@ -113,19 +113,19 @@ All 13 diagrams, from system context to a single Redis command:
 
 Everything that has to pass before a change ships:
 
-| Tool                                              | What it proves                                                                                                                                                                                                |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Vitest 4** (unit)                               | password policy, username normalization, problem registry                                                                                                                                                     |
-| **fast-check** (property-based)                   | thousands of adversarial Unicode inputs — normalization idempotence, never-throws, policy invariants                                                                                                          |
-| **Testcontainers** (integration, real `redis:8`)  | `SET NX` race, byte-identical 401, rehash-on-login, both rate limiters, every protocol edge — identical suite on a laptop and in CI                                                                           |
-| **Security attack-suite**                         | each test is an attack that must fail: enumeration, timing, injection, mass assignment, CRLF, leakage                                                                                                         |
-| **Contract tests + OpenAPI drift gate**           | live responses validated against the committed `openapi.json`; CI regenerates and diffs, so docs cannot lie                                                                                                   |
-| **Stryker (mutation testing)**                    | mutates the domain logic and fails CI if the tests don't kill the mutants — measures whether assertions _catch_ regressions, not just line coverage. Score **87%**, gated at 80%                              |
-| **autocannon** (benchmark)                        | measured login ceiling ≈ the `HASH_MAX_CONCURRENCY ÷ verify-time` math, within 4%                                                                                                                             |
-| **Spectral**                                      | OpenAPI contract lint                                                                                                                                                                                         |
-| **CodeQL · gitleaks · Trivy · dependency-review** | SAST, secret scan, container-image CVEs, vulnerable-dependency gate on PRs                                                                                                                                    |
-| **tofu test · tflint · checkov**                  | IaC security invariants asserted at plan time                                                                                                                                                                 |
-| **LocalStack apply**                              | the _entire_ AWS stack (VPC → ECS → ElastiCache → ALB → Route 53 → Secrets) provisioned for real against emulated AWS APIs — an integration test for the Terraform itself, $0 spend. See the [live tour](../) |
+| Tool                                              | What it proves                                                                                                                                                                                                                                 |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vitest 4** (unit)                               | password policy, username normalization, problem registry                                                                                                                                                                                      |
+| **fast-check** (property-based)                   | thousands of adversarial Unicode inputs — normalization idempotence, never-throws, policy invariants                                                                                                                                           |
+| **Testcontainers** (integration, real `redis:8`)  | `SET NX` race, byte-identical 401, rehash-on-login, both rate limiters, every protocol edge — identical suite on a laptop and in CI                                                                                                            |
+| **Security attack-suite**                         | each test is an attack that must fail: enumeration, timing, injection, mass assignment, CRLF, leakage                                                                                                                                          |
+| **Contract tests + OpenAPI drift gate**           | live responses validated against the committed `openapi.json`; CI regenerates and diffs, so docs cannot lie                                                                                                                                    |
+| **Stryker (mutation testing)**                    | mutates the domain logic and fails CI if the tests don't kill the mutants — measures whether assertions _catch_ regressions, not just line coverage. Score **87%**, gated at 80%                                                               |
+| **autocannon** (benchmark)                        | measured login ceiling ≈ the `HASH_MAX_CONCURRENCY ÷ verify-time` math, within 4%                                                                                                                                                              |
+| **Spectral**                                      | OpenAPI contract lint                                                                                                                                                                                                                          |
+| **CodeQL · gitleaks · Trivy · dependency-review** | SAST, secret scan, container-image CVEs, vulnerable-dependency gate on PRs                                                                                                                                                                     |
+| **tofu test · tflint · checkov**                  | IaC security invariants asserted at plan time                                                                                                                                                                                                  |
+| **LocalStack apply**                              | the _entire_ AWS stack (VPC → ECS → ElastiCache → ALB → Route 53 → Secrets) provisioned for real against emulated AWS APIs — an integration test for the Terraform itself, $0 spend. See the [live tour](https://arashm0z.github.io/auth-api/) |
 
 ## Quickstart
 
@@ -134,9 +134,11 @@ docker compose up --build   # API on :3000, Redis with AOF durability
 # interactive docs (Scalar): http://localhost:3000/docs
 ```
 
-> Prefer the interactive version? The **[landing site](../)** has the deployed-
-> architecture tour, a request **[playground](../playground.html)**, and a live
-> **[rate-limiter demo](../ratelimit.html)**.
+> Prefer the interactive version? The
+> **[landing site](https://arashm0z.github.io/auth-api/)** has the
+> deployed-architecture tour, a request
+> **[playground](https://arashm0z.github.io/auth-api/playground.html)**, and a
+> live **[rate-limiter demo](https://arashm0z.github.io/auth-api/ratelimit.html)**.
 
 > The quality priority order that drives every trade-off on this site:
 > **security > correctness > operability > throughput > feature count.**

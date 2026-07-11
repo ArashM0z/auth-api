@@ -3,16 +3,16 @@
 # and security posture instead of running a plan against real credentials.
 name: IaC
 
+# No path filter, deliberately: this workflow uploads SARIF, and GitHub's
+# code-scanning check fails any PR whose analysis set is missing a category
+# that main has ("configuration not found"). Running the ~50s static checks
+# on every push/PR keeps the category always present — and lets the job be a
+# required check.
 on:
   push:
     branches: [main]
-    paths:
-      - 'infra/**'
-      - '.github/workflows/iac.yml'
   pull_request:
-    paths:
-      - 'infra/**'
-      - '.github/workflows/iac.yml'
+  workflow_dispatch:
 
 # Read-only for the repo; security-events write lets Checkov publish SARIF
 # to the Security tab. No cloud credentials are needed anywhere here.

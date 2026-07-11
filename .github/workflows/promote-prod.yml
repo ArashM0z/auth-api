@@ -1,0 +1,23 @@
+name: promote-prod
+
+# Promote the dispatched ref's already-built image to PRODUCTION.
+#
+# Deliberately NO workflow_dispatch inputs (Checkov CKV_GHA_7). The artifact
+# is the dispatched ref's commit SHA — the same immutable image dev and
+# staging ran. The `production` GitHub environment requires a reviewer
+# approval before the deploy job may start; that gate lives in repository
+# settings, not in workflow code a PR could edit.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  production:
+    uses: ./.github/workflows/deploy-env.yml
+    secrets: inherit
+    with:
+      environment: production
+      image_tag: ${{ github.sha }}

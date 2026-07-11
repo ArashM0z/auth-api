@@ -1,0 +1,76 @@
+name: deploy-env (reusable)
+
+# Reusable deploy: called by deploy.yml (dev, on merge) and the promote-*
+# workflows (staging/prod, dispatched with NO inputs — Checkov CKV_GHA_7).
+# workflow_call inputs are workflow-to-workflow parameters, not user input:
+# the image tag is always a git SHA chosen by the calling workflow's ref.
+#
+# The GitHub environment supplies per-env vars AND protection rules —
+# `production` requires a reviewer approval before the job may start.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      image_tag:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # OIDC federation to AWS — no stored credentials
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.environment }}
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false # never cancel a deploy mid-apply
+    env:
+      # GitHub environment is named `production`; infra names use `prod`
+      # (environments/prod.tfvars, auth-api-prod).
+      TARGET_ENV: ${{ inputs.environment == 'production' && 'prod' || inputs.environment }}
+      IMAGE_TAG: ${{ inputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Verify the artifact exists (promotions never build)
+        run: |
+          aws ecr describe-images --repository-name auth-api \
+            --image-ids imageTag="$IMAGE_TAG" >/dev/null || {
+              echo "::error::image tag $IMAGE_TAG was never built — merge to main first";
+              exit 1;
+            }
+      - uses: opentofu/setup-opentofu@v2
+      - name: Init (per-environment state)
+        working-directory: infra
+        run: |
+          tofu init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=auth-api/${TARGET_ENV}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}"
+      - name: Plan
+        working-directory: infra
+        run: |
+          tofu plan -input=false -out=tfplan \
+            -var-file="environments/${TARGET_ENV}.tfvars" \
+            -var "app_image_tag=${IMAGE_TAG}"
+      - name: Apply
+        working-directory: infra
+        run: tofu apply -input=false tfplan
+      - name: Wait for the service to stabilize (rollback = ECS circuit breaker)
+        run: |
+          aws ecs wait services-stable \
+            --cluster "auth-api-${TARGET_ENV}" \
+            --services "auth-api-${TARGET_ENV}"
+          echo "deploy of ${IMAGE_TAG} to ${TARGET_ENV} is stable"

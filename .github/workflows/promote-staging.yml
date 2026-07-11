@@ -1,0 +1,23 @@
+name: promote-staging
+
+# Promote the dispatched ref's already-built image to STAGING.
+#
+# Deliberately NO workflow_dispatch inputs (Checkov CKV_GHA_7: build output
+# must not be affectable by user parameters). The artifact is identified by
+# the ref you dispatch from — run it on main (or a tag) and that commit's
+# image is promoted. The image must already exist in ECR (built by
+# deploy.yml when the commit merged); this workflow never builds.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  staging:
+    uses: ./.github/workflows/deploy-env.yml
+    secrets: inherit
+    with:
+      environment: staging
+      image_tag: ${{ github.sha }}
