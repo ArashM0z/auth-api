@@ -1,17 +1,21 @@
 name: docs
 
-# Builds the MkDocs Material site and publishes it to GitHub Pages
-# (served from the gh-pages branch). Runs on any docs change to main.
+# Publishes the combined GitHub Pages site:
+#   /            → the landing site (pages/: architecture tour, API reference,
+#                  playground, rate-limiter demo)
+#   /docs/       → the arc42 architecture handbook (MkDocs Material)
+# Runs on any change to either source on main.
 on:
   push:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'pages/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
-# gh-deploy pushes the built site to the gh-pages branch, so it needs write.
+# Deploy pushes the assembled site to the gh-pages branch.
 permissions:
   contents: write
 
@@ -21,16 +25,31 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build & deploy to GitHub Pages
+    name: Build & deploy landing + handbook
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # gh-deploy needs history to update gh-pages
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
       - run: pip install "mkdocs-material>=9.5"
-      - run: mkdocs gh-deploy --force --no-history
+
+      - name: Build the MkDocs handbook
+        run: mkdocs build # → site/
+
+      - name: Assemble combined site (landing at /, handbook at /docs/)
+        run: |
+          rm -rf out
+          mkdir out
+          cp -r pages/. out/
+          cp -r site out/docs
+          touch out/.nojekyll
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          force_orphan: true
