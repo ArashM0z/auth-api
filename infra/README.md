@@ -144,7 +144,7 @@ inter-service networking, custom controllers, or multi-cloud portability
 requirements. This is a **single, stateless, two-endpoint service**; on that
 shape, ECS Fargate delivers the same "containers behind a load balancer, auto-
 scaled, rolling deploys" outcome with a fraction of the operational surface:
-no control plane to run, patch, and secure, and (relevant to Lendesk's stack)
+no control plane to run, patch, and secure, and
 it lives natively in the AWS + Terraform world the rest of this repo targets.
 
 Shipping a Helm chart _alongside_ this ECS definition would present a reviewer
