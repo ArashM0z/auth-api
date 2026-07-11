@@ -2116,7 +2116,14 @@
           var a = document.createElement('a');
           a.href = '#' + s.id;
           a.dataset.target = s.id;
-          a.innerHTML = '<span class="n">' + num + '</span><span>' + title + '</span>';
+          // Build with textContent — never innerHTML from DOM-derived text.
+          var numEl = document.createElement('span');
+          numEl.className = 'n';
+          numEl.textContent = num;
+          var titleEl = document.createElement('span');
+          titleEl.textContent = title;
+          a.appendChild(numEl);
+          a.appendChild(titleEl);
           nav.appendChild(a);
         });
         // theme toggle
