@@ -83,6 +83,19 @@ jobs:
           output_format: cli,sarif
           output_file_path: console,checkov-tf.sarif
 
+      # Checkov marks inline-skipped checks as SARIF suppressions with their
+      # justifications, but GitHub code scanning ignores the suppressions
+      # property and would open an alert for every documented skip. Strip
+      # suppressed results before upload: the justification lives in the HCL,
+      # and only true failures should reach the Security tab.
+      - name: Strip in-source-suppressed results from the SARIF
+        if: always()
+        run: |
+          f="checkov-tf.sarif"
+          [ -d "$f" ] && f="$f/results_sarif.sarif"
+          jq '.runs[].results |= map(select((.suppressions // []) | length == 0))' "$f" > "$f.tmp"
+          mv "$f.tmp" "$f"
+
       # Publish findings to the Security tab even when the step above fails
       # the build, so regressions are visible, not just red.
       - name: Upload Checkov results to Security tab
