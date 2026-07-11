@@ -1,0 +1,3 @@
+# Docs toolchain — pinned so the Pages deploy is reproducible.
+# Renovate/Dependabot (pip ecosystem) can bump this like any dependency.
+mkdocs-material==9.7.6
