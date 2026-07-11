@@ -54,6 +54,21 @@ mock_provider "aws" {
       arn = "arn:aws:ssm:ca-central-1:123456789012:parameter/mock"
     }
   }
+  mock_resource "aws_kms_key" {
+    defaults = {
+      arn = "arn:aws:kms:ca-central-1:123456789012:key/00000000-0000-0000-0000-000000000000"
+    }
+  }
+  mock_resource "aws_cloudwatch_log_group" {
+    defaults = {
+      arn = "arn:aws:logs:ca-central-1:123456789012:log-group:mock"
+    }
+  }
+  mock_resource "aws_wafv2_web_acl" {
+    defaults = {
+      arn = "arn:aws:wafv2:ca-central-1:123456789012:regional/webacl/mock/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 mock_provider "random" {
@@ -82,6 +97,18 @@ run "security_posture" {
   assert {
     condition     = aws_ecr_repository.app.image_tag_mutability == "IMMUTABLE"
     error_message = "ECR tags must be IMMUTABLE so a tag can never point at different bytes."
+  }
+
+  # --- ECR: images encrypted with the customer-managed KMS key --------------
+  assert {
+    condition     = aws_ecr_repository.app.encryption_configuration[0].encryption_type == "KMS"
+    error_message = "ECR must use KMS encryption with the project CMK (kms.tf)."
+  }
+
+  # --- VPC flow logs: present and capturing everything -----------------------
+  assert {
+    condition     = aws_flow_log.vpc.traffic_type == "ALL"
+    error_message = "VPC flow logs must exist and capture ALL traffic (accepts and rejects)."
   }
 
   # --- ElastiCache: encrypted at rest and in transit ------------------------

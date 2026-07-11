@@ -23,7 +23,6 @@ locals {
 }
 
 resource "aws_vpc" "main" {
-  #checkov:skip=CKV2_AWS_11:VPC Flow Logs add CloudWatch ingest/storage cost with no reader in a zero-traffic demo; enable them (to S3) in production.
   cidr_block = "10.0.0.0/16"
 
   # Required for ElastiCache endpoint DNS resolution inside the VPC.
@@ -33,6 +32,60 @@ resource "aws_vpc" "main" {
   tags = {
     Name = "${local.name_prefix}-vpc"
   }
+}
+
+# --- VPC Flow Logs -----------------------------------------------------------
+# Accept/reject records for every ENI in the VPC — the raw material for
+# incident forensics ("what talked to what, when"). Delivered to CloudWatch
+# Logs (KMS-encrypted, same retention policy as the app logs) via a role that
+# only the flow-logs service can assume and that can only write to this group.
+
+resource "aws_cloudwatch_log_group" "flow_logs" {
+  name              = "/vpc/${local.name_prefix}-flow-logs"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.main.arn
+}
+
+data "aws_iam_policy_document" "flow_logs_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "flow_logs" {
+  name               = "${local.name_prefix}-flow-logs"
+  assume_role_policy = data.aws_iam_policy_document.flow_logs_assume.json
+}
+
+data "aws_iam_policy_document" "flow_logs_publish" {
+  statement {
+    sid = "PublishFlowLogs"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams",
+    ]
+    resources = ["${aws_cloudwatch_log_group.flow_logs.arn}:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "flow_logs" {
+  name   = "publish-flow-logs"
+  role   = aws_iam_role.flow_logs.id
+  policy = data.aws_iam_policy_document.flow_logs_publish.json
+}
+
+resource "aws_flow_log" "vpc" {
+  vpc_id          = aws_vpc.main.id
+  traffic_type    = "ALL"
+  log_destination = aws_cloudwatch_log_group.flow_logs.arn
+  iam_role_arn    = aws_iam_role.flow_logs.arn
 }
 
 # Explicitly manage the VPC default security group down to zero rules so

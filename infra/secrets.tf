@@ -16,17 +16,16 @@
 #     app consumes as REDIS_URL. It EMBEDS the token, so it is a secret too and
 #     must live here, never in SSM as a String.
 #
-# Both use the AWS-managed `aws/secretsmanager` KMS key. A production system
-# with a compliance requirement would supply a customer-managed CMK (kms_key_id)
-# and grant the execution role kms:Decrypt on it — see the execution-role
-# policy in ecs.tf.
+# Both are encrypted with the project's customer-managed CMK (kms.tf); the
+# ECS execution role is granted kms:Decrypt on exactly that key — see the
+# execution-role policy in ecs.tf.
 # ---------------------------------------------------------------------------
 
 resource "aws_secretsmanager_secret" "redis_auth_token" {
-  #checkov:skip=CKV_AWS_149:Encrypted with the AWS-managed aws/secretsmanager key; a customer-managed CMK adds key cost + rotation overhead this demo does not need (production would set kms_key_id).
   #checkov:skip=CKV2_AWS_57:Automatic rotation needs a rotation Lambda + a VPC path to ElastiCache; it is a prod-only concern (see rotation note) and out of scope for a never-applied demo.
   name        = "/${var.project_name}/${var.environment}/redis-auth-token"
   description = "Raw ElastiCache AUTH token for ${local.name_prefix} (rotate independently in prod)."
+  kms_key_id  = aws_kms_key.main.arn
 
   # Demo: destroy immediately so `tofu destroy` leaves nothing behind. Prod
   # keeps the default 30-day recovery window (or longer) so an accidental
@@ -56,10 +55,10 @@ resource "aws_secretsmanager_secret_version" "redis_auth_token" {
 # It embeds the AUTH token, so it is stored as a secret and injected into the
 # task via the container `secrets` block (ecs.tf), never as plaintext env.
 resource "aws_secretsmanager_secret" "redis_url" {
-  #checkov:skip=CKV_AWS_149:Encrypted with the AWS-managed aws/secretsmanager key; production with a compliance requirement would supply a customer-managed CMK (kms_key_id).
   #checkov:skip=CKV2_AWS_57:Rotation is driven by the redis_auth_token secret above (prod-only); this derived URL is re-written by that same rotation Lambda, so a separate schedule here would be redundant.
   name        = "/${var.project_name}/${var.environment}/redis-url"
   description = "Full rediss:// REDIS_URL for ${local.name_prefix} (embeds the AUTH token)."
+  kms_key_id  = aws_kms_key.main.arn
 
   recovery_window_in_days = 0
 }

@@ -19,6 +19,19 @@ flowchart LR
     CW[CloudWatch<br/>logs + Container Insights] -.->|logs & metrics| ECS
 ```
 
+Hardening around that core:
+
+- **KMS CMK** (`kms.tf`) — one customer-managed, auto-rotating key encrypts
+  ECR images, every CloudWatch log group, ElastiCache at rest and both secrets.
+- **VPC flow logs** (`network.tf`) — ALL-traffic accept/reject records to a
+  KMS-encrypted log group via a least-privilege delivery role.
+- **WAF** (`alb.tf`) — REGIONAL WAFv2 web ACL (AWS managed Common +
+  KnownBadInputs rule sets) on the ALB, logging to CloudWatch.
+- **ALB access-log bucket** (`logging.tf`) — private, versioned, SSE-S3,
+  lifecycle-expired S3 bucket writable only by the ELB log-delivery service.
+- **API Gateway access logs** (`apigateway.tf`) — one JSON line per request
+  (requestId, ip, routeKey, status) into a KMS-encrypted log group.
+
 Deployed per environment (`dev` / `staging` / `prod`) with env-prefixed
 resource names and per-environment state; see
 [../docs/CONFIGURATION.md](../docs/CONFIGURATION.md). **Secrets** (the Redis
@@ -50,8 +63,8 @@ the internet. Production would use private subnets with NAT gateways or VPC
 endpoints; the trade-off is called out inline in `network.tf`.
 
 Rough steady-state cost if applied: ALB ~$22 + 2× Fargate task ~$25 +
-cache.t4g.micro ~$11 + Container Insights/logs a few dollars ≈
-**~USD 60–65/month**.
+cache.t4g.micro ~$11 + WAF ~$5 + KMS CMK ~$1 + Container Insights/logs a
+few dollars ≈ **~USD 65–70/month**.
 
 ## Applying it for real
 
@@ -117,10 +130,11 @@ On every PR / push to `main` touching `infra/**`:
    (`tests/security.tftest.hcl`)
 4. `tflint` — terraform ruleset (recommended preset) + AWS ruleset
 5. `checkov` — security/posture scanning, `soft_fail: false`; the handful of
-   deliberate demo trade-offs (no NAT, HTTP-only listener, AWS-managed keys,
-   30-day logs) are suppressed **inline** next to the resource with a
-   written justification, never blanket-skipped; findings are published as
-   SARIF to the repository Security tab even when the step fails the build
+   deliberate demo trade-offs (no NAT, HTTP-only listener, SSE-S3 on the ALB
+   log bucket, no secret rotation) are suppressed **inline** next to the
+   resource with a written justification, never blanket-skipped; findings are
+   published as SARIF to the repository Security tab even when the step fails
+   the build
 
 ## Why ECS/Fargate — not EKS, Kubernetes, or Helm
 

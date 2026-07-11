@@ -140,7 +140,7 @@ tofu plan  -var-file=environments/dev.tfvars
 # staging: 2 tasks across 2 AZs, cache.t4g.small, 14-day logs
 tofu apply -var-file=environments/staging.tfvars
 
-# prod: 3 tasks, wider autoscaling, 30-day logs
+# prod: 3 tasks, wider autoscaling, 365-day logs
 tofu apply -var-file=environments/prod.tfvars
 ```
 
@@ -149,16 +149,19 @@ be chosen explicitly, and `contains(["dev","staging","prod"], ...)` validation
 rejects anything else (asserted in
 `infra/tests/environments.tftest.hcl::rejects_invalid_environment`).
 
-|                       | dev             | staging         | prod             |
-| --------------------- | --------------- | --------------- | ---------------- |
-| `desired_count`       | 1               | 2               | 3                |
-| autoscaling min / max | 1 / 3           | 2 / 6           | 3 / 20           |
-| `redis_node_type`     | cache.t4g.micro | cache.t4g.small | cache.t4g.small¹ |
-| `log_retention_days`  | 7               | 14              | 30               |
-| `log_level`           | debug           | info            | info             |
+|                            | dev             | staging         | prod             |
+| -------------------------- | --------------- | --------------- | ---------------- |
+| `desired_count`            | 1               | 2               | 3                |
+| autoscaling min / max      | 1 / 3           | 2 / 6           | 3 / 20           |
+| `redis_node_type`          | cache.t4g.micro | cache.t4g.small | cache.t4g.small¹ |
+| `redis_num_cache_clusters` | 1               | 2 (Multi-AZ)    | 2 (Multi-AZ)     |
+| `log_retention_days`       | 7               | 14              | 365              |
+| `log_level`                | debug           | info            | info             |
+| `alb_deletion_protection`  | false           | true            | true             |
 
-¹ prod may justify a memory-optimised node (e.g. `cache.r7g.large`) plus
-`num_cache_clusters >= 2` with Multi-AZ automatic failover; see `infra/redis.tf`.
+¹ prod may justify a memory-optimised node (e.g. `cache.r7g.large`); with
+`redis_num_cache_clusters >= 2`, Multi-AZ automatic failover is already on
+(see `infra/redis.tf`).
 
 ## Per-environment isolation
 
@@ -222,11 +225,24 @@ useful AWS credentials.
 
 ## Why the checkov skips exist
 
-Three finding types are suppressed inline in `infra/secrets.tf` and
-`infra/config.tf` with honest, demo-vs-prod justifications:
+A hardening pass resolved most of the original demo skips for real: a shared
+customer-managed CMK (`infra/kms.tf`) now encrypts ECR, all CloudWatch log
+groups, ElastiCache and both secrets (`CKV_AWS_136/158/191/149`), and the
+stack gained VPC flow logs (`CKV2_AWS_11`), a WAF on the ALB (`CKV2_AWS_28`),
+ALB access logs (`CKV_AWS_91`) with deletion protection (`CKV_AWS_150`),
+API Gateway access logs (`CKV_AWS_76`), Multi-AZ Redis failover in
+staging/prod (`CKV2_AWS_50`), 365-day default log retention (`CKV_AWS_338`)
+and scoped app-tier egress (`CKV_AWS_382`).
 
-| ID            | Where                           | Justification                                                                                                                                                                                                                                    |
-| ------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `CKV_AWS_149` | Secrets Manager secrets (×2)    | Encrypted with the AWS-managed `aws/secretsmanager` key; a customer-managed CMK is a prod/compliance concern (`kms_key_id`).                                                                                                                     |
-| `CKV2_AWS_57` | Secrets Manager secrets (×2)    | Automatic rotation needs a rotation Lambda with a VPC path to ElastiCache — prod-only, see above.                                                                                                                                                |
-| `CKV2_AWS_34` | SSM `String` config params (×5) | Deliberately plain String: these are **non-secret config**, not credentials. SecureString is reserved for secrets, which live in Secrets Manager. Encrypting non-secret config would blur the exact boundary this split exists to make explicit. |
+The skips that remain are deliberate decisions, suppressed inline next to the
+resource with a written justification:
+
+| ID                                      | Where                           | Justification                                                                                                                                                      |
+| --------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CKV2_AWS_57`                           | Secrets Manager secrets (×2)    | Automatic rotation needs a rotation Lambda with a VPC path to ElastiCache — prod-only, see above.                                                                  |
+| `CKV2_AWS_34`                           | SSM `String` config params (×5) | Deliberately plain String: these are **non-secret config**, not credentials. Encrypting them would blur the exact boundary the config/secret split makes explicit. |
+| `CKV_AWS_145` (+ 18/144, `CKV2_AWS_62`) | ALB access-log bucket           | ALB log delivery requires SSE-S3, not a KMS CMK; access-logging the log bucket itself would recurse; no replication/notification consumers exist.                  |
+| `CKV2_AWS_76`                           | ALB                             | The WAF carries Common + KnownBadInputs (covers Log4j); the also-required AnonymousIpList would block legitimate VPN users of an auth API.                         |
+| `CKV_AWS_109/111/356`                   | KMS key policy                  | The root-account anchor statement AWS requires in every key policy; `Resource: "*"` inside a key policy means "this key" only.                                     |
+| `CKV_AWS_2/103/260`, `CKV2_AWS_20`      | HTTP listener / ALB SG          | No domain, so no ACM cert can be issued; the demo terminates plain HTTP. Production adds :443 + ACM and 301s HTTP→HTTPS.                                           |
+| `CKV_AWS_333`                           | ECS service                     | Public IPs for task egress instead of ~USD 65+/mo NAT; ingress is still ALB-only via security groups.                                                              |

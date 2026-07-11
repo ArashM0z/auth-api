@@ -15,10 +15,11 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_cloudwatch_log_group" "app" {
-  #checkov:skip=CKV_AWS_158:Default SSE is adequate for demo app logs; a KMS CMK adds key cost and IAM complexity without a confidentiality requirement here.
-  #checkov:skip=CKV_AWS_338:Retention is a deliberate per-env cost/compliance trade-off (var.log_retention_days: 7/14/30d for dev/staging/prod); regulated workloads would set 365+.
   name              = "/ecs/${local.name_prefix}"
   retention_in_days = var.log_retention_days
+  # Encrypted with the project CMK; the key policy (kms.tf) grants the
+  # CloudWatch Logs service principal use of the key.
+  kms_key_id = aws_kms_key.main.arn
 }
 
 # --- IAM: two roles, deliberately distinct -----------------------------------
@@ -54,15 +55,20 @@ resource "aws_iam_role_policy_attachment" "task_execution_managed" {
 #     auth-token secret, which the task never reads, and not "*").
 #   * ssm:GetParameters on the three config parameter ARNs that are injected —
 #     not ssm:* and not a path wildcard.
-# Decryption uses the AWS-managed aws/secretsmanager and aws/ssm keys, whose
-# key policies already permit use via those services, so NO explicit kms:Decrypt
-# grant is needed. With a customer-managed CMK you would add a statement:
-#   actions=["kms:Decrypt"], resources=[<cmk-arn>].
+# Both secrets are encrypted with the project CMK (kms.tf), so the role also
+# needs kms:Decrypt on exactly that key — not kms:* and not all keys. The SSM
+# String parameters are unencrypted config and need no KMS grant.
 data "aws_iam_policy_document" "task_execution_secrets" {
   statement {
     sid       = "ReadRedisUrlSecret"
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [aws_secretsmanager_secret.redis_url.arn]
+  }
+
+  statement {
+    sid       = "DecryptSecretsWithProjectCmk"
+    actions   = ["kms:Decrypt"]
+    resources = [aws_kms_key.main.arn]
   }
 
   statement {

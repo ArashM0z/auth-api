@@ -5,7 +5,6 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_ecr_repository" "app" {
-  #checkov:skip=CKV_AWS_136:AWS-managed AES-256 encryption is sufficient for demo images; a customer-managed KMS key adds USD 1/mo + per-request cost without a threat model that needs it here.
   # Env-scoped for isolation, consistent with every other resource. An
   # alternative is one SHARED registry with an image-promotion pipeline
   # (build/scan once in dev, then re-tag/pull the identical digest in staging
@@ -20,6 +19,13 @@ resource "aws_ecr_repository" "app" {
     # Free basic scanning (CVE feed) on every push; findings surface in the
     # console and EventBridge before the image is ever deployed.
     scan_on_push = true
+  }
+
+  # Images encrypted with the project CMK (kms.tf) instead of the default
+  # AES-256, so image access is auditable via CloudTrail KMS events.
+  encryption_configuration {
+    encryption_type = "KMS"
+    kms_key         = aws_kms_key.main.arn
   }
 
   # Demo convenience: allows `tofu destroy` even with images present.

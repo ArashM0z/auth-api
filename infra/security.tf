@@ -42,7 +42,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
 
 resource "aws_security_group" "app" {
   name        = "${local.name_prefix}-app"
-  description = "Fargate tasks: ALB in, internet + redis out"
+  description = "Fargate tasks: ALB in; HTTPS, redis and DNS out"
   vpc_id      = aws_vpc.main.id
 
   tags = {
@@ -62,18 +62,55 @@ resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
   ip_protocol                  = "tcp"
 }
 
-# Open egress: without NAT or VPC endpoints the tasks pull images from ECR,
-# ship logs to CloudWatch, and fetch config/secrets from SSM Parameter Store
-# and Secrets Manager directly over the internet (TLS), plus talk to Redis
-# in-VPC. Production narrows this to 443 + the redis SG once traffic flows
-# through VPC endpoints.
-resource "aws_vpc_security_group_egress_rule" "app_all" {
-  #checkov:skip=CKV_AWS_382:Tasks need general egress to reach ECR/CloudWatch/SSM/Secrets Manager public endpoints because the demo omits NAT and VPC endpoints for cost (see network.tf).
+# Egress scoped to exactly what the tasks do: HTTPS to the AWS APIs (no NAT
+# or VPC endpoints in this demo, so those are public endpoints — see
+# network.tf), Redis in-VPC, and DNS to the VPC resolver. Everything else
+# (including plain HTTP out) is denied.
+
+# 443/tcp: ECR image pulls, CloudWatch Logs, SSM Parameter Store, and
+# Secrets Manager — all TLS on public AWS endpoints.
+resource "aws_vpc_security_group_egress_rule" "app_https" {
   security_group_id = aws_security_group.app.id
-  description       = "ECR pulls, CloudWatch Logs, SSM, Secrets Manager, and Redis"
+  description       = "HTTPS to AWS APIs (ECR, CloudWatch Logs, SSM, Secrets Manager)"
 
   cidr_ipv4   = "0.0.0.0/0"
-  ip_protocol = "-1"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+}
+
+# 6379/tcp, to the redis SG only: the app's datastore connection (TLS).
+resource "aws_vpc_security_group_egress_rule" "app_to_redis" {
+  security_group_id = aws_security_group.app.id
+  description       = "Redis in the private tier, by SG reference only"
+
+  referenced_security_group_id = aws_security_group.redis.id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+}
+
+# 53/udp + 53/tcp to the VPC CIDR: name resolution via the VPC resolver
+# (ElastiCache endpoints, AWS API hostnames). TCP is needed for large
+# responses that overflow UDP.
+resource "aws_vpc_security_group_egress_rule" "app_dns_udp" {
+  security_group_id = aws_security_group.app.id
+  description       = "DNS (UDP) to the VPC resolver"
+
+  cidr_ipv4   = aws_vpc.main.cidr_block
+  from_port   = 53
+  to_port     = 53
+  ip_protocol = "udp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_dns_tcp" {
+  security_group_id = aws_security_group.app.id
+  description       = "DNS (TCP fallback) to the VPC resolver"
+
+  cidr_ipv4   = aws_vpc.main.cidr_block
+  from_port   = 53
+  to_port     = 53
+  ip_protocol = "tcp"
 }
 
 resource "aws_security_group" "redis" {
