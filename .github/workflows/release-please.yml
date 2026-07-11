@@ -1,0 +1,30 @@
+name: release-please
+
+# Automated releases — best practice for a Conventional Commits repository.
+# On every push to main, release-please maintains a single "release PR" that
+# updates the version in package.json and generates CHANGELOG.md from the
+# commit history since the last release. Merging that PR tags the version and
+# publishes a GitHub Release automatically. No manual `gh release create`.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # tag + create the release
+  pull-requests: write # open/update the release PR
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Maintain the release PR / publish the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
