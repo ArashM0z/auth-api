@@ -6,8 +6,8 @@ rather than a preference. The format is deliberate:
 > **Decision** → **Forces** (what pressures the choice) → **Rationale** (why this
 > one) → **Alternatives rejected** → **Consequences** (what we accept).
 
-The [ADRs](adr/index.md) hold the long form; this page is the interview-ready
-distillation.
+The [ADRs](adr/index.md) hold the long form; this page is the distilled
+summary.
 
 ## Quality goals — the tie-breaker
 
@@ -194,7 +194,7 @@ everysec` bounds crash-loss to ~1s of writes; production notes recommend RDB+AOF
 - **Forces.** New IaC in 2026 that wants to stay open-source.
 - **Rationale.** OpenTofu is the Linux Foundation's MPL-2.0 fork of Terraform after
   HashiCorp's BUSL relicense — drop-in compatible with the HCL/provider ecosystem.
-  The stack (ECS Fargate, ALB, ElastiCache, ECR) is the same shape Lendesk runs,
+  The stack (ECS Fargate, ALB, ElastiCache, ECR) is the standard shape for containerized services on AWS,
   and its security invariants are asserted by native `tofu test`, not hoped for.
 - **Alternatives rejected.** Terraform proper (BUSL 1.1 since 2023 —
   source-available, not open source); CloudFormation/CDK (locks the IaC to one

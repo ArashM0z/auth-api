@@ -1,5 +1,5 @@
 site_name: Authentication API — Architecture
-site_description: arc42 architecture documentation for the Lendesk auth-API take-home — design rationale, diagrams, security, and compliance.
+site_description: arc42 architecture documentation for the authentication API — design rationale, diagrams, security, and compliance.
 site_author: Arash Mozhdehi
 site_url: https://arashm0z.github.io/auth-api/docs/
 repo_url: https://github.com/ArashM0z/auth-api
