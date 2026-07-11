@@ -75,10 +75,23 @@ Volunteering the limits is the point — each has a mitigation and a next step.
 - **409 on registration reveals username existence.** Unavoidable for username
   signup; the login side leaks nothing and registration is IP-rate-limited.
 
+## Compliance mapping (SOC 2-style controls)
+
+| Control area                     | Evidence                                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Access control / least privilege | Non-root container; scoped IAM task roles in `infra/`; Redis SG reachable only from the app SG          |
+| Change management                | CI gates (lint, typecheck, real-Redis tests, coverage, audit, CodeQL, OpenAPI-drift, IaC scans)         |
+| Monitoring & incident response   | Structured audit log with correlation ids; health probes; load-shedding signals                         |
+| Confidentiality                  | Argon2id at-rest; encryption in transit + at rest in the IaC (customer-managed KMS); no secrets in code |
+| Data minimization (PIPEDA)       | Per user, only username + hash + timestamps are stored — nothing else exists to breach                  |
+
+The regulatory framing (OSFI E-23 / B-13 / B-10, PIPEDA) is on the
+[Compliance](COMPLIANCE.md) page.
+
 ## Required before real production
 
-TLS everywhere (`TRUST_PROXY` already plumbed; `rediss://` + Redis AUTH already in
-the IaC) · session/token issuance · breached-password screening (HIBP) · account
-lockout escalation + alerting on `auth.rate_limited` spikes · MFA hooks · secret
-rotation Lambda · dashboards & alert rules · audit-log retention (PIPEDA) — see
-[Compliance](COMPLIANCE.md).
+The full pre-production task list — TLS everywhere, token issuance,
+breached-password screening, lockout escalation, MFA, secret rotation,
+observability wiring, and compliance operationalization — is tracked on the
+[Roadmap & technical debt](roadmap.md#required-before-a-real-production-deployment)
+page, each with its reason and next step.

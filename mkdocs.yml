@@ -59,6 +59,7 @@ nav:
   - Operations (runbook): OPERATIONS.md
   - Configuration: CONFIGURATION.md
   - AI workflow: AI_WORKFLOW.md
+  - Roadmap & technical debt: roadmap.md
   - Decisions (ADRs):
       - Overview: adr/index.md
       - 0001 · Fastify over Express: adr/0001-fastify-over-express.md

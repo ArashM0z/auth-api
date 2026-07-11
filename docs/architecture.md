@@ -121,13 +121,17 @@ error handlers → routes.
 
 ## 8. Risks & technical debt
 
-| Risk                                      | Posture                                                                                                                                                                                     |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Redis durability as system of record      | AOF everysec (≤1s loss) documented; RDB+AOF or Postgres for real production                                                                                                                 |
-| Fixed-window limiter burst (≤2× at edges) | Accepted at current thresholds; sliding window listed as refinement                                                                                                                         |
-| CSP disabled for Scalar docs UI           | JSON API unaffected; scope per-route or host docs separately in production                                                                                                                  |
-| Single Redis in demo                      | HA path (replication/Sentinel or managed ElastiCache) documented in infra                                                                                                                   |
-| No token issuance                         | Deliberate scope cut (ADR-0005); next iteration                                                                                                                                             |
-| IaC test depth                            | `tofu test` asserts security invariants at plan time; policy-as-code (OPA/Conftest) and apply-time sandbox tests deferred                                                                   |
-| Metrics/trace ops wiring                  | `/metrics` + OTLP tracing implemented; scrape config, dashboards, alert rules are environment-side                                                                                          |
-| Two runtime branches remain untested      | The load-shedding 503 (`under-pressure`) and the `/readyz` 1s-timeout branch are exercised in production but not yet in the suite — flagged by the adversarial review, deferred as low-risk |
+| Risk                                      | Posture                                                                                                                                                                                   |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Redis durability as system of record      | AOF everysec (≤1s loss) documented; RDB+AOF or Postgres for real production                                                                                                               |
+| Fixed-window limiter burst (≤2× at edges) | Accepted at current thresholds; sliding window listed as refinement                                                                                                                       |
+| CSP disabled for Scalar docs UI           | JSON API unaffected; scope per-route or host docs separately in production                                                                                                                |
+| Single Redis in demo                      | HA path (replication/Sentinel or managed ElastiCache) documented in infra                                                                                                                 |
+| No token issuance                         | Deliberate scope cut (ADR-0005); next iteration                                                                                                                                           |
+| IaC test depth                            | `tofu test` asserts security invariants at plan time; policy-as-code (OPA/Conftest) and apply-time sandbox tests deferred                                                                 |
+| Metrics/trace ops wiring                  | `/metrics` + OTLP tracing implemented; scrape config, dashboards, alert rules are environment-side                                                                                        |
+| Load-shed 503 branch untested             | The `/readyz` 503 (Redis down) is covered; the `under-pressure` 503 needs event-loop-lag simulation that would be flaky — deferred honestly, see [Roadmap](roadmap.md#test-coverage-debt) |
+
+The full, living list — accepted trade-offs, deferred decisions, and the
+pre-production task list — lives on the [Roadmap & technical debt](roadmap.md)
+page.
