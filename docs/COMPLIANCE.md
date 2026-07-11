@@ -44,20 +44,23 @@ _Provincial note:_ Quebec's **Law 25** adds stricter privacy obligations
 
 ## 3. What this service already implements
 
-Controls already in the repo, mapped to the frameworks above. Full SOC 2-style
-control table is in [security model](security.md); this is the regulatory view.
+Controls already in the repo, mapped to the frameworks above. The full SOC
+2-style control table lives in the repository's
+[`SECURITY.md`](https://github.com/ArashM0z/auth-api/blob/main/SECURITY.md);
+the architecture view is the [security model](security.md) page; this is the
+regulatory view.
 
-| Control in this repo                                                                                               | Evidence                                          | Maps to                                                   |
-| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- | --------------------------------------------------------- |
-| Argon2id at-rest, PHC strings, rehash-on-login                                                                     | `src/domain/password-hasher.ts`                   | B-13 cyber; PIPEDA safeguards                             |
-| **Data minimization** — only username + hash + timestamps stored                                                   | `src/services/user-service.ts`                    | PIPEDA (limiting collection); reduces breach blast radius |
-| Encryption in transit + at rest (ElastiCache, TLS at ALB)                                                          | `infra/redis.tf`, `infra/security.tf`             | B-13 resilience; B-10 cloud controls                      |
-| Secrets in AWS Secrets Manager, config in SSM — never in code/env                                                  | `infra/secrets.tf`, `docs/CONFIGURATION.md`       | B-13 governance; B-10 key management                      |
-| **Structured audit trail** with correlation ids, never credentials                                                 | `src/audit.ts`                                    | B-13 monitoring; SOC 2 monitoring; forensic evidence      |
-| Change management: lint, typecheck, real-Redis tests, coverage gate, `npm audit`, CodeQL, OpenAPI-drift, IaC scans | `.github/workflows/`                              | B-13 governance & secure SDLC                             |
-| Least-privilege IAM; Redis SG reachable only from the app SG; non-root container                                   | `infra/`, `Dockerfile`                            | B-13 access control; B-10 segmentation                    |
-| Resilience: load shedding, graceful drain, `/readyz` dependency gating, AOF durability                             | `src/app.ts`, `src/server.ts`, `compose.yaml`     | B-13 technology operations & resilience                   |
-| Brute-force & timing defenses (rate limits, timing-equalized login)                                                | `src/plugins/rate-limit.ts`, `src/routes/auth.ts` | B-13 cyber; abuse resistance                              |
+| Control in this repo                                                                                                                                                                                             | Evidence                                          | Maps to                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------- |
+| Argon2id at-rest, PHC strings, rehash-on-login                                                                                                                                                                   | `src/domain/password-hasher.ts`                   | B-13 cyber; PIPEDA safeguards                             |
+| **Data minimization** — only username + hash + timestamps stored                                                                                                                                                 | `src/services/user-service.ts`                    | PIPEDA (limiting collection); reduces breach blast radius |
+| Encryption in transit + at rest (ElastiCache, TLS at ALB)                                                                                                                                                        | `infra/redis.tf`, `infra/security.tf`             | B-13 resilience; B-10 cloud controls                      |
+| Secrets in AWS Secrets Manager, config in SSM — never in code/env                                                                                                                                                | `infra/secrets.tf`, `docs/CONFIGURATION.md`       | B-13 governance; B-10 key management                      |
+| **Structured audit trail** with correlation ids, never credentials                                                                                                                                               | `src/audit.ts`                                    | B-13 monitoring; SOC 2 monitoring; forensic evidence      |
+| Change management: lint, typecheck, real-Redis tests, coverage gate, `npm audit`, CodeQL, OpenAPI-drift, gitleaks, Trivy image scan, dependency-review, checkov IaC/Dockerfile scans (SARIF to the Security tab) | `.github/workflows/`                              | B-13 governance & secure SDLC                             |
+| Least-privilege IAM; Redis SG reachable only from the app SG; non-root container                                                                                                                                 | `infra/`, `Dockerfile`                            | B-13 access control; B-10 segmentation                    |
+| Resilience: load shedding, graceful drain, `/readyz` dependency gating, AOF durability                                                                                                                           | `src/app.ts`, `src/server.ts`, `compose.yaml`     | B-13 technology operations & resilience                   |
+| Brute-force & timing defenses (rate limits, timing-equalized login)                                                                                                                                              | `src/plugins/rate-limit.ts`, `src/routes/auth.ts` | B-13 cyber; abuse resistance                              |
 
 ## 4. Governing an AI mortgage feature under E-23 + EDGE
 

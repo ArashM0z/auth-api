@@ -13,6 +13,8 @@ reach is `@fastify/rate-limit`.
 A ~90-line `RedisRateLimiter` (fixed windows; atomic
 `INCR` + `EXPIRE NX` + `TTL` in one `MULTI`) with three verbs (`hit`,
 `peek`, `clear`), plus a helper emitting the draft-IETF rate-limit headers.
+_(`peek` was later removed — see the
+[Amendment](#amendment-2026-07-11-peek-removed-after-adversarial-review) below.)_
 
 ## Rationale
 
@@ -45,7 +47,9 @@ a slot only after a failed verify. Adversarial review found that to be a
 `count < max` before any increment landed, letting the entire burst past the
 cap and into the expensive Argon2id verify.
 
-The shipped limiter therefore has **two verbs, `hit` and `clear`**. The login
+The shipped limiter therefore has **two verbs, `hit` and `clear`** (~70
+lines in `src/plugins/rate-limit.ts`; the "~90 lines" above counted the
+original design with `peek`). The login
 handler consumes a slot with an atomic `INCR` **before** verification and
 checks the returned count; Redis serializes the increments, so at most `max`
 attempts per window ever reach a verify, and the window still clears on

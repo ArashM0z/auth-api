@@ -12,7 +12,7 @@ OWASP Password Storage Cheat Sheet) rather than folklore.
 
 > **Contents:** [Quickstart](#quickstart) · [API](#api) · [Errors](#error-model) ·
 > [Security](#security-model) · [Performance](#measured-performance) ·
-> [Scaling](#scalability) · [Testing](#testing) · [CI/CD](#cicd--infrastructure) ·
+> [Scaling](#scalability) · [Observability](#observability) · [Testing](#testing) · [CI/CD](#cicd--infrastructure) ·
 > [Decisions (ADRs)](#design-decisions) · [Approach](#approach--ai-workflow)
 
 ## Quickstart
@@ -22,7 +22,7 @@ OWASP Password Storage Cheat Sheet) rather than folklore.
 - [**Interactive playground**](https://arashm0z.github.io/auth-api/playground.html) — fire every case (create, login, weak, duplicate, wrong password, rate-limited, malformed) and watch the real HTTP exchange plus the client ⇄ app ⇄ Redis round trip that produced it
 - [**API reference**](https://arashm0z.github.io/auth-api/api.html) — the OpenAPI contract, rendered with [Scalar](https://github.com/scalar/scalar)
 - [**Rate-limiter demo**](https://arashm0z.github.io/auth-api/ratelimit.html) — the live per-username failure window
-- [**Infrastructure**](https://arashm0z.github.io/auth-api/) — the Terraform stack applied on [LocalStack](https://localstack.cloud) (56 resources, $0, re-checked in CI)
+- [**Infrastructure**](https://arashm0z.github.io/auth-api/) — the Terraform stack applied on [LocalStack](https://localstack.cloud) (56 resources, $0, re-applied in CI on every infra change)
 - [**Architecture handbook**](https://arashm0z.github.io/auth-api/docs/) — arc42 docs: design rationale, 13 diagrams, security model, compliance & AI governance
 
 Or run it locally:
@@ -56,12 +56,12 @@ Or natively: Node ≥ 24, `npm ci && npm run dev` (Redis via compose or any `RED
 
 ## API
 
-| Endpoint                                   | Success                      | Failures                                              |
-| ------------------------------------------ | ---------------------------- | ----------------------------------------------------- |
-| `POST /v1/users` — create a login          | **201 Created** + `Location` | 400 validation · 409 taken · 422 policy · 415/413/429 |
-| `POST /v1/auth/login` — verify credentials | **200 OK**                   | **401** invalid credentials · 429 rate limited        |
-| `GET /healthz` — liveness                  | 200                          | —                                                     |
-| `GET /readyz` — readiness (Redis PING)     | 200                          | 503                                                   |
+| Endpoint                                   | Success                      | Failures                                                                     |
+| ------------------------------------------ | ---------------------------- | ---------------------------------------------------------------------------- |
+| `POST /v1/users` — create a login          | **201 Created** + `Location` | 400 validation · 409 taken · 422 policy · 415/413/429                        |
+| `POST /v1/auth/login` — verify credentials | **200 OK**                   | **401** invalid credentials · 429 rate limited · 400/413/415 protocol errors |
+| `GET /healthz` — liveness                  | 200                          | —                                                                            |
+| `GET /readyz` — readiness (Redis PING)     | 200                          | 503                                                                          |
 
 Two spec notes, both deliberate and documented. Creation returns **201**
 (RFC 9110 semantics) rather than a literal 200; rationale in
@@ -121,7 +121,7 @@ Detail is withheld in one place on purpose: login failures return a generic
 
 ## Security model
 
-The login flow, including the branch most implementations miss:
+The login flow, including the branch that's easy to get wrong:
 
 ```mermaid
 sequenceDiagram
@@ -144,14 +144,18 @@ sequenceDiagram
             A->>A: argon2id verify vs DUMMY hash (same cost)
         end
         alt verified
-            A->>R: clear failure window
+            A->>R: DEL failure window (slot refunded on success)
             A-->>C: 200 authenticated
         else failed
-            A->>R: INCR failure window (EXPIRE NX)
-            A-->>C: 401 — byte-identical for both failure paths
+            A-->>C: 401 — byte-identical for both failure paths (slot already consumed at the gate)
         end
     end
 ```
+
+The gate consumes an attempt _before_ the verify — a read-then-check would
+be a TOCTOU race letting a concurrent burst of guesses slip past the cap
+while their verifies run ([ADR-0008](docs/adr/0008-custom-redis-rate-limiter.md),
+amended); success refunds the window.
 
 Measured on this machine, wrong password vs unknown user, three runs each:
 **16–19 ms both**, statistically indistinguishable. An integration test also
@@ -231,7 +235,7 @@ costs ~19 MiB per slot. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -
 
 ## Testing
 
-**79 tests, ~96% line coverage** (thresholds enforced in CI), in five layers:
+**79 tests, ~97% line coverage** (thresholds enforced in CI), in five layers:
 
 1. **Unit** — password policy, username normalization, problem registry.
 2. **Property-based** (fast-check) — thousands of adversarial Unicode inputs
@@ -265,11 +269,21 @@ npm run test:mutation    # Stryker mutation testing (domain logic)
 
 ## CI/CD & infrastructure
 
-**GitHub Actions** ([ci.yml](.github/workflows/ci.yml)): lint (ESLint 10
-strict-type-checked + Prettier) → typecheck → tests vs real Redis →
-coverage gate → `npm audit` (high+) → OpenAPI drift check → Spectral
-contract lint → Docker build with a **non-root assertion** (the image ships
-zero devDependencies and runs as uid 1000, enforced in CI). Plus
+**GitHub Actions** ([ci.yml](.github/workflows/ci.yml), on every push and
+PR): lint (ESLint 10 strict-type-checked + Prettier) → typecheck → tests vs
+real Redis → coverage gate → mutation gate (Stryker) → `npm audit` (high+) →
+OpenAPI drift check → Spectral contract lint → Docker build with a
+**non-root assertion** (the image ships zero devDependencies and **no npm or
+corepack** — the package manager is stripped from the final stage so a
+compromised container can't install tooling — and runs as uid 1000, enforced
+in CI). A dedicated [security.yml](.github/workflows/security.yml) layers on
+gitleaks secret scanning across history, a Trivy scan of the production
+image, dependency-review on PRs, and checkov over the Dockerfile and
+workflows — findings publish to the repository Security tab as SARIF.
+[docs.yml](.github/workflows/docs.yml) deploys the combined GitHub Pages
+site (landing at `/`, [architecture handbook](https://arashm0z.github.io/auth-api/docs/)
+at `/docs/`), and [localstack.yml](.github/workflows/localstack.yml) applies
+the full Terraform stack to LocalStack on every infra change. Plus
 [CodeQL](.github/workflows/codeql.yml) security analysis and
 [Dependabot](.github/dependabot.yml) across npm/actions/docker/terraform.
 
@@ -292,7 +306,10 @@ autoscaling, least-privilege IAM.
   security-group restrictions, immutable/scanned images, no secret in outputs)
   plus `tflint` and `checkov`, all in [iac.yml](.github/workflows/iac.yml).
 
-Deliberately **validated but not applied** so the demo stays zero-cost. See
+Deliberately **never applied to billable AWS**, so the demo stays zero-cost —
+but not merely linted either: the full stack is **applied end-to-end against
+[LocalStack](https://localstack.cloud)** (emulated AWS APIs), locally and
+automatically in CI on any infra change. See
 [infra/README.md](infra/README.md).
 
 ## Design decisions

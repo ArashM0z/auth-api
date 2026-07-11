@@ -31,7 +31,14 @@ Traffic is admitted tier-to-tier by security-group reference only:
 health-checks `/readyz` (which includes the Redis dependency) so tasks that
 lose Redis are drained; the container itself health-checks `/healthz`
 (process liveness) so ECS doesn't kill healthy processes over a Redis blip.
-Autoscaling target-tracks 60% CPU between 2 and 10 tasks.
+Autoscaling target-tracks 60% CPU between per-environment bounds (dev 1–3,
+staging 2–6, prod 3–20 tasks; see `environments/*.tfvars`).
+
+Two optional edge pieces complete the picture: an **API Gateway HTTP API**
+fronts the ALB over a VPC Link (`apigateway.tf`) to add throttling and a
+single audited entry point, and a **private Route 53 zone** gives the service
+a stable internal name, `api.auth.internal`, resolving to the ALB
+(`route53.tf`).
 
 ## Why Fargate runs in public subnets
 
@@ -88,11 +95,14 @@ tflocal apply -var-file=environments/dev.tfvars
 Terraform changes. Browse what came up in the LocalStack dashboard (Resource
 Browser, region `ca-central-1`).
 
-It also runs **in CI**: the
-[`LocalStack infra test`](../.github/workflows/localstack.yml) workflow boots
-LocalStack inside the GitHub runner, applies the full stack, and asserts every
-layer comes up — an infrastructure integration test, still \$0. So both the
-syntax (via the static checks below) _and_ the actual apply are covered.
+It also runs **in CI, automatically**: the
+[`LocalStack infra test`](../.github/workflows/localstack.yml) workflow
+triggers on any push or PR that touches `infra/**` (plus on demand via
+`workflow_dispatch`; it consumes the LocalStack Pro token), boots LocalStack
+inside the GitHub runner, applies the full stack, and asserts every layer
+comes up — an infrastructure integration test, still \$0. So both the syntax
+(via the static checks below) _and_ the actual apply are covered on every
+infra change.
 
 ## CI checks (`.github/workflows/iac.yml`)
 
@@ -100,11 +110,17 @@ On every PR / push to `main` touching `infra/**`:
 
 1. `tofu fmt -check -recursive` — canonical formatting
 2. `tofu init -backend=false && tofu validate` — schema/type/reference validation
-3. `tflint` — terraform ruleset (recommended preset) + AWS ruleset
-4. `checkov` — security/posture scanning, `soft_fail: false`; the handful of
+3. `tofu test` — native plan-time tests against mock providers (no AWS
+   credentials): per-environment naming/sizing (`tests/environments.tftest.hcl`)
+   and security invariants — secret-vs-config injection, String-only SSM
+   params, no secret material in outputs, `readonlyRootFilesystem`
+   (`tests/security.tftest.hcl`)
+4. `tflint` — terraform ruleset (recommended preset) + AWS ruleset
+5. `checkov` — security/posture scanning, `soft_fail: false`; the handful of
    deliberate demo trade-offs (no NAT, HTTP-only listener, AWS-managed keys,
    30-day logs) are suppressed **inline** next to the resource with a
-   written justification, never blanket-skipped
+   written justification, never blanket-skipped; findings are published as
+   SARIF to the repository Security tab even when the step fails the build
 
 ## Why ECS/Fargate — not EKS, Kubernetes, or Helm
 
