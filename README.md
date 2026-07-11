@@ -235,7 +235,7 @@ costs ~19 MiB per slot. Reproduce: `RATE_LIMIT_IP_MAX=100000 docker compose up -
 
 ## Testing
 
-**79 tests, ~97% line coverage** (thresholds enforced in CI), in five layers:
+**86 tests, ~97% line coverage** (thresholds enforced in CI), in five layers:
 
 1. **Unit** — password policy, username normalization, problem registry.
 2. **Property-based** (fast-check) — thousands of adversarial Unicode inputs
