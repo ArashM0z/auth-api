@@ -1,6 +1,6 @@
 {
   "name": "auth-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Internal authentication API — Fastify 5, TypeScript 6, Redis 8, Argon2id. RFC 9457 errors, OpenAPI, distributed rate limiting.",
   "type": "module",
   "license": "MIT",
