@@ -1,0 +1,2174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Auth API visual guide — 13 hand-drawn diagrams of every subsystem, with portable Mermaid source."
+    />
+    <title>Auth API — Visual Guide</title>
+    <style>
+      :root {
+        --ground: #f4f6f8;
+        --surface: #fff;
+        --surface-2: #eef1f5;
+        --hairline: #e0e4ea;
+        --hairline-strong: #cdd3dd;
+        --ink: #10151c;
+        --ink-soft: #2d3540;
+        --muted: #5a6472;
+        --accent: #0f766e;
+        --accent-strong: #0b5c55;
+        --accent-wash: #0f766e14;
+        --blue: #2563eb;
+        --blue-wash: #2563eb12;
+        --green: #15803d;
+        --green-wash: #15803d14;
+        --amber: #b45309;
+        --amber-wash: #b4530914;
+        --red: #be123c;
+        --red-wash: #be123c12;
+        --shadow: 0 1px 2px rgba(16, 21, 28, 0.04), 0 4px 16px rgba(16, 21, 28, 0.05);
+        --mono:
+          ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #0b0f15;
+          --surface: #111721;
+          --surface-2: #161d28;
+          --hairline: #222b37;
+          --hairline-strong: #313c4b;
+          --ink: #e6ecf4;
+          --ink-soft: #c2cbd7;
+          --muted: #8791a1;
+          --accent: #2dd4bf;
+          --accent-strong: #5eead4;
+          --accent-wash: #2dd4bf1f;
+          --blue: #60a5fa;
+          --blue-wash: #60a5fa1f;
+          --green: #4ade80;
+          --green-wash: #4ade801f;
+          --amber: #fbbf24;
+          --amber-wash: #fbbf241f;
+          --red: #fb7185;
+          --red-wash: #fb71851f;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 22px rgba(0, 0, 0, 0.35);
+        }
+      }
+      :root[data-theme='light'] {
+        --ground: #f4f6f8;
+        --surface: #fff;
+        --surface-2: #eef1f5;
+        --hairline: #e0e4ea;
+        --hairline-strong: #cdd3dd;
+        --ink: #10151c;
+        --ink-soft: #2d3540;
+        --muted: #5a6472;
+        --accent: #0f766e;
+        --accent-strong: #0b5c55;
+        --accent-wash: #0f766e14;
+        --blue: #2563eb;
+        --blue-wash: #2563eb12;
+        --green: #15803d;
+        --green-wash: #15803d14;
+        --amber: #b45309;
+        --amber-wash: #b4530914;
+        --red: #be123c;
+        --red-wash: #be123c12;
+        --shadow: 0 1px 2px rgba(16, 21, 28, 0.04), 0 4px 16px rgba(16, 21, 28, 0.05);
+      }
+      :root[data-theme='dark'] {
+        --ground: #0b0f15;
+        --surface: #111721;
+        --surface-2: #161d28;
+        --hairline: #222b37;
+        --hairline-strong: #313c4b;
+        --ink: #e6ecf4;
+        --ink-soft: #c2cbd7;
+        --muted: #8791a1;
+        --accent: #2dd4bf;
+        --accent-strong: #5eead4;
+        --accent-wash: #2dd4bf1f;
+        --blue: #60a5fa;
+        --blue-wash: #60a5fa1f;
+        --green: #4ade80;
+        --green-wash: #4ade801f;
+        --amber: #fbbf24;
+        --amber-wash: #fbbf241f;
+        --red: #fb7185;
+        --red-wash: #fb71851f;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 22px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        * {
+          transition: none !important;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      header.top {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+        backdrop-filter: saturate(1.4) blur(10px);
+        border-bottom: 1px solid var(--hairline);
+      }
+      .top-inner {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 12px 22px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-right: auto;
+      }
+      .brand .mark {
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 3px 7px;
+        border-radius: 5px;
+      }
+      .brand h1 {
+        font-size: 1.02rem;
+        margin: 0;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+      .brand .sub {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .btn {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        background: var(--surface);
+        border: 1px solid var(--hairline-strong);
+        border-radius: 8px;
+        padding: 8px 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .wrap {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 26px 22px 90px;
+        display: grid;
+        grid-template-columns: 224px 1fr;
+        gap: 34px;
+        align-items: start;
+      }
+      nav.side {
+        position: sticky;
+        top: 82px;
+        align-self: start;
+        max-height: calc(100vh - 104px);
+        overflow-y: auto;
+        padding-right: 6px;
+      }
+      nav.side .navtitle {
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px 8px;
+      }
+      nav.side a {
+        display: flex;
+        gap: 9px;
+        color: var(--ink-soft);
+        font-size: 0.85rem;
+        padding: 6px 10px;
+        border-radius: 7px;
+        border-left: 2px solid transparent;
+        line-height: 1.3;
+      }
+      nav.side a:hover {
+        background: var(--surface-2);
+        text-decoration: none;
+        color: var(--ink);
+      }
+      nav.side a.active {
+        color: var(--accent-strong);
+        border-left-color: var(--accent);
+        background: var(--accent-wash);
+      }
+      nav.side a .n {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--muted);
+        min-width: 16px;
+      }
+      main {
+        min-width: 0;
+      }
+
+      .lede {
+        font-size: 1.22rem;
+        line-height: 1.5;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        margin: 0 0 6px;
+        text-wrap: balance;
+      }
+      .lede-sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+        max-width: 70ch;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin: 0 0 30px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        border-radius: 12px;
+      }
+      .legend .li {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+      }
+      .legend .sw {
+        width: 22px;
+        height: 15px;
+        border-radius: 4px;
+        border: 1.5px solid var(--hairline-strong);
+        background: var(--surface-2);
+        flex-shrink: 0;
+      }
+      .legend .sw.accent {
+        border-color: var(--accent);
+        background: var(--accent-wash);
+      }
+      .legend .sw.store {
+        border-color: var(--accent);
+        background: var(--accent-wash);
+        border-radius: 4px 4px 9px 9px;
+      }
+      .legend .sw.warn {
+        border-color: var(--red);
+        background: var(--red-wash);
+      }
+      .legend .sw.ok {
+        border-color: var(--green);
+        background: var(--green-wash);
+      }
+
+      section.dia {
+        margin-bottom: 46px;
+        scroll-margin-top: 80px;
+      }
+      .dia-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 6px;
+      }
+      .dia-head .num {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        color: var(--accent);
+        background: var(--accent-wash);
+        border: 1px solid var(--accent);
+        padding: 2px 8px;
+        border-radius: 6px;
+      }
+      .dia-head h2 {
+        font-size: 1.3rem;
+        margin: 0;
+        font-weight: 660;
+        letter-spacing: -0.015em;
+      }
+      .dia-sub {
+        color: var(--muted);
+        font-size: 0.92rem;
+        margin: 0 0 16px;
+      }
+
+      .canvas {
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 26px 24px;
+        overflow-x: auto;
+      }
+      .canvas svg {
+        display: block;
+        height: auto;
+        max-width: 100%;
+      }
+      .dsvg {
+        font-family: var(--mono);
+      }
+      .dsvg .node {
+        fill: var(--surface-2);
+        stroke: var(--hairline-strong);
+        stroke-width: 1.5;
+      }
+      .dsvg .node.accent {
+        fill: var(--accent-wash);
+        stroke: var(--accent);
+        stroke-width: 1.8;
+      }
+      .dsvg .node.store {
+        fill: var(--accent-wash);
+        stroke: var(--accent);
+        stroke-width: 1.8;
+      }
+      .dsvg .node.warn {
+        fill: var(--red-wash);
+        stroke: var(--red);
+        stroke-width: 1.8;
+      }
+      .dsvg .node.ok {
+        fill: var(--green-wash);
+        stroke: var(--green);
+        stroke-width: 1.8;
+      }
+      .dsvg .title {
+        fill: var(--ink);
+        font-weight: 600;
+      }
+      .dsvg text {
+        fill: var(--ink);
+        font-size: 13px;
+      }
+      .dsvg .sm {
+        fill: var(--muted);
+        font-size: 11px;
+      }
+      .dsvg .life {
+        stroke: var(--hairline-strong);
+        stroke-width: 1.5;
+        stroke-dasharray: 3 4;
+      }
+      .dsvg .edge {
+        stroke: var(--muted);
+        stroke-width: 1.6;
+        fill: none;
+        marker-end: url(#ah);
+      }
+      .dsvg .edge.ret {
+        stroke-dasharray: 5 4;
+      }
+      .dsvg .edge.ok {
+        stroke: var(--green);
+        marker-end: url(#ah-ok);
+      }
+      .dsvg .edge.bad {
+        stroke: var(--red);
+        marker-end: url(#ah-bad);
+      }
+      .dsvg .band {
+        fill: var(--surface-2);
+        opacity: 0.5;
+      }
+      .dsvg .elabel {
+        fill: var(--ink-soft);
+        font-size: 11.5px;
+      }
+      .dsvg .ahp {
+        fill: var(--muted);
+      }
+      .dsvg .ahp-ok {
+        fill: var(--green);
+      }
+      .dsvg .ahp-bad {
+        fill: var(--red);
+      }
+
+      /* CSS diagram primitives */
+      .flow {
+        counter-reset: step;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .flow > li {
+        position: relative;
+        padding: 0 0 16px 46px;
+      }
+      .flow > li::before {
+        counter-increment: step;
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-wash);
+        border: 1px solid var(--accent);
+        width: 28px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 7px;
+      }
+      .flow > li::after {
+        content: '';
+        position: absolute;
+        left: 14px;
+        top: 30px;
+        bottom: 2px;
+        width: 1.5px;
+        background: var(--hairline-strong);
+      }
+      .flow > li:last-child {
+        padding-bottom: 0;
+      }
+      .flow > li:last-child::after {
+        display: none;
+      }
+      .flow .st {
+        font-weight: 620;
+        color: var(--ink);
+      }
+      .flow .sd {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .flow .sd code {
+        background: var(--surface-2);
+        border: 1px solid var(--hairline);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        color: var(--ink-soft);
+      }
+
+      .pipe {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        flex-wrap: nowrap;
+        min-width: min-content;
+      }
+      .pipe .stage {
+        flex: 1;
+        min-width: 118px;
+        background: var(--surface-2);
+        border: 1px solid var(--hairline-strong);
+        border-radius: 10px;
+        padding: 11px 12px;
+        position: relative;
+        margin-right: 20px;
+      }
+      .pipe .stage:last-child {
+        margin-right: 0;
+      }
+      .pipe .stage:not(:last-child)::after {
+        content: '▶';
+        position: absolute;
+        right: -16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 0.7rem;
+      }
+      .pipe .stage .sn {
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .pipe .stage .sl {
+        font-weight: 600;
+        font-size: 0.86rem;
+        color: var(--ink);
+        margin-top: 2px;
+      }
+      .pipe .stage .sx {
+        font-size: 0.76rem;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      .branch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .lane {
+        background: var(--surface-2);
+        border: 1px solid var(--hairline-strong);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .lane.ok {
+        border-color: color-mix(in srgb, var(--green) 45%, transparent);
+        background: var(--green-wash);
+      }
+      .lane.bad {
+        border-color: color-mix(in srgb, var(--red) 45%, transparent);
+        background: var(--red-wash);
+      }
+      .lane h4 {
+        margin: 0 0 8px;
+        font-size: 0.82rem;
+        font-family: var(--mono);
+        letter-spacing: 0.03em;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .lane.ok h4 {
+        color: var(--green);
+      }
+      .lane.bad h4 {
+        color: var(--red);
+      }
+      .lane p {
+        margin: 0 0 6px;
+        font-size: 0.88rem;
+        color: var(--ink-soft);
+      }
+      .lane p:last-child {
+        margin-bottom: 0;
+      }
+      .lane code {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      .stores {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+      }
+      .kv {
+        background: var(--surface-2);
+        border: 1px solid var(--hairline-strong);
+        border-radius: 12px;
+        padding: 14px 16px;
+        border-left: 3px solid var(--accent);
+      }
+      .kv .key {
+        font-family: var(--mono);
+        font-size: 0.86rem;
+        color: var(--accent-strong);
+        font-weight: 600;
+        word-break: break-all;
+      }
+      .kv .val {
+        font-size: 0.84rem;
+        color: var(--ink-soft);
+        margin-top: 8px;
+      }
+      .kv .op {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--muted);
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .kv .op span {
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+
+      .layers {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .layer {
+        display: grid;
+        grid-template-columns: 132px 1fr;
+        gap: 14px;
+        align-items: center;
+        background: var(--surface-2);
+        border: 1px solid var(--hairline-strong);
+        border-radius: 10px;
+        padding: 12px 16px;
+      }
+      .layer .lname {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--accent-strong);
+      }
+      .layer .ldesc {
+        font-size: 0.86rem;
+        color: var(--ink-soft);
+      }
+      .layer .ldesc code {
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.82em;
+      }
+      .layer.rule {
+        background: transparent;
+        border: none;
+        padding: 2px 16px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-style: italic;
+        display: block;
+      }
+
+      .pyramid {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+      }
+      .prow {
+        border: 1px solid var(--hairline-strong);
+        background: var(--surface-2);
+        border-radius: 8px;
+        padding: 10px 16px;
+        text-align: center;
+      }
+      .prow .pl {
+        font-weight: 620;
+        font-size: 0.9rem;
+      }
+      .prow .px {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .prow.l1 {
+        width: 56%;
+      }
+      .prow.l2 {
+        width: 70%;
+      }
+      .prow.l3 {
+        width: 84%;
+      }
+      .prow.l4 {
+        width: 98%;
+      }
+      .prow.cap {
+        width: 70%;
+        border-color: var(--accent);
+        background: var(--accent-wash);
+      }
+      .prow.cap .pl {
+        color: var(--accent-strong);
+      }
+
+      .dtree {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .drow {
+        display: grid;
+        grid-template-columns: 190px 60px 1fr;
+        gap: 12px;
+        align-items: center;
+        background: var(--surface-2);
+        border: 1px solid var(--hairline);
+        border-radius: 9px;
+        padding: 9px 14px;
+      }
+      .drow .cond {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+      .drow .code {
+        font-family: var(--mono);
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-align: center;
+        border-radius: 5px;
+        padding: 2px 0;
+      }
+      .drow .desc {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .c4 {
+        color: var(--blue);
+      }
+      .c2 {
+        color: var(--amber);
+      }
+      .c5 {
+        color: var(--red);
+      }
+      .cok {
+        color: var(--green);
+      }
+
+      .cap {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 760px) {
+        .cap {
+          grid-template-columns: 1fr;
+        }
+        .branch {
+          grid-template-columns: 1fr;
+        }
+        .wrap {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        nav.side {
+          display: none;
+        }
+        .brand .sub {
+          display: none;
+        }
+      }
+      .capbox {
+        border: 1px solid var(--hairline);
+        border-radius: 11px;
+        padding: 13px 15px;
+        background: var(--surface);
+      }
+      .capbox .t {
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .capbox.read .t {
+        color: var(--blue);
+      }
+      .capbox.say .t {
+        color: var(--accent);
+      }
+      .capbox p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+      }
+      .capbox.say p {
+        font-style: italic;
+      }
+      .capbox strong {
+        color: var(--ink);
+        font-weight: 640;
+      }
+
+      details.src {
+        margin-top: 12px;
+        border: 1px solid var(--hairline);
+        border-radius: 10px;
+        background: var(--surface);
+        overflow: hidden;
+      }
+      details.src summary {
+        cursor: pointer;
+        padding: 9px 15px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        user-select: none;
+      }
+      details.src summary::-webkit-details-marker {
+        display: none;
+      }
+      details.src summary::before {
+        content: '</>';
+        color: var(--accent);
+        font-weight: 700;
+      }
+      details.src[open] summary {
+        border-bottom: 1px solid var(--hairline);
+      }
+      details.src pre {
+        margin: 0;
+        padding: 14px 16px;
+        overflow-x: auto;
+        background: var(--surface-2);
+      }
+      details.src code {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        white-space: pre;
+      }
+      .copy {
+        margin-left: auto;
+        background: var(--surface-2);
+        border: 1px solid var(--hairline-strong);
+        border-radius: 6px;
+        padding: 2px 9px;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        color: var(--ink-soft);
+        cursor: pointer;
+      }
+      .copy:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      footer {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 26px 22px 60px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        border-top: 1px solid var(--hairline);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-inner">
+        <div class="brand">
+          <span class="mark">Auth&nbsp;API</span>
+          <div>
+            <h1>Visual Guide</h1>
+            <span class="sub">Lendesk take-home · every subsystem as a diagram</span>
+          </div>
+        </div>
+        <button class="btn" id="themeToggle" aria-label="Toggle theme">Theme</button>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <nav class="side" aria-label="Diagrams">
+        <p class="navtitle">Diagrams</p>
+        <div id="navlinks"></div>
+      </nav>
+
+      <main>
+        <p class="lede">
+          The whole service, drawn. Thirteen diagrams that take you from "who calls this" down to a
+          single Redis command — each one point-at-able and captioned with what to say.
+        </p>
+        <p class="lede-sub">
+          Every diagram below carries a collapsible <strong>Mermaid source</strong> block. It
+          renders as-is on GitHub, so you can drop any of these straight into your repo's README or
+          <code>docs/</code>. Companion to the 256-question
+          <a href="https://claude.ai/code/artifact/9b78ed7d-455d-4adb-a43d-a52859131bed"
+            >Q&amp;A bank</a
+          >.
+        </p>
+
+        <div class="legend" aria-label="Legend">
+          <span class="li"><span class="sw"></span>process / step</span>
+          <span class="li"><span class="sw accent"></span>the API</span>
+          <span class="li"><span class="sw store"></span>Redis / data store</span>
+          <span class="li"><span class="sw ok"></span>success path</span>
+          <span class="li"><span class="sw warn"></span>attacker-facing / failure</span>
+        </div>
+
+        <!-- 1. SYSTEM CONTEXT -->
+        <section class="dia" id="d1">
+          <div class="dia-head">
+            <span class="num">01</span>
+            <h2>System context</h2>
+          </div>
+          <p class="dia-sub">
+            Where the service sits: internal callers in, Redis + logs + orchestrator around it. No
+            browsers — so no CORS, no cookies.
+          </p>
+          <div class="canvas">
+            <svg
+              class="dsvg"
+              viewBox="0 0 860 400"
+              width="860"
+              role="img"
+              aria-label="System context diagram"
+            >
+              <defs>
+                <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                  <path class="ahp" d="M0,0 L7,3 L0,6 Z" />
+                </marker>
+              </defs>
+              <text class="sm" x="40" y="86">INTERNAL SERVICES (no browsers)</text>
+              <rect class="node" x="40" y="100" width="168" height="48" rx="9" />
+              <text x="124" y="129" text-anchor="middle">Gateway / BFF</text>
+              <rect class="node" x="40" y="176" width="168" height="48" rx="9" />
+              <text x="124" y="205" text-anchor="middle">Back-office jobs</text>
+
+              <rect class="node accent" x="356" y="120" width="196" height="96" rx="12" />
+              <text class="title" x="454" y="158" text-anchor="middle">Authentication API</text>
+              <text class="sm" x="454" y="178" text-anchor="middle">Fastify 5 · TypeScript 6</text>
+              <text class="sm" x="454" y="194" text-anchor="middle">stateless · N replicas</text>
+
+              <path
+                class="node store"
+                d="M672,132 h160 v70 a80,10 0 0 1 -160,0 v-70 a80,10 0 0 1 160,0"
+              />
+              <text class="title" x="752" y="158" text-anchor="middle">Redis 8</text>
+              <text class="sm" x="752" y="176" text-anchor="middle">users + rate windows</text>
+              <text class="sm" x="752" y="192" text-anchor="middle">AOF everysec</text>
+
+              <rect class="node" x="356" y="40" width="196" height="44" rx="9" />
+              <text x="454" y="67" text-anchor="middle">Orchestrator / LB</text>
+              <rect class="node" x="356" y="300" width="196" height="46" rx="9" />
+              <text x="454" y="322" text-anchor="middle">Log pipeline</text>
+              <text class="sm" x="454" y="338" text-anchor="middle">audit events</text>
+
+              <path class="edge" d="M208,124 L352,150" />
+              <path class="edge" d="M208,200 L352,186" />
+              <text class="elabel" x="214" y="120">POST /v1/users · /v1/auth/login</text>
+              <path class="edge" d="M552,168 L668,168" />
+              <text class="elabel" x="560" y="160">SET NX · GET · INCR</text>
+              <path class="edge ret" d="M454,84 L454,118" />
+              <text class="elabel" x="462" y="104">probes</text>
+              <path class="edge ret" d="M454,216 L454,298" />
+              <text class="elabel" x="462" y="260">structured logs</text>
+            </svg>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Two kinds of internal caller hit two endpoints. The app holds
+                <strong>no state</strong> — everything lives in Redis — so you can run any number of
+                replicas. The orchestrator probes it; audit events stream to your logs.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "It's a stateless credential service. All state is in Redis, which is exactly why
+                the rate limiter stays correct across replicas and why horizontal scaling is
+                trivial."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart LR
+  subgraph consumers [Internal services]
+    S1[Gateway / BFF]
+    S2[Back-office jobs]
+  end
+  A[Authentication API&lt;br/&gt;Fastify 5 · stateless · N replicas]
+  R[(Redis 8&lt;br/&gt;users + rate windows&lt;br/&gt;AOF everysec)]
+  P[Orchestrator / LB]
+  O[Log pipeline&lt;br/&gt;audit events]
+  S1 --&gt;|POST /v1/users, /v1/auth/login| A
+  S2 --&gt; A
+  A --&gt;|SET NX · GET · INCR| R
+  P -.probes.-&gt; A
+  A -.structured logs.-&gt; O</code></pre>
+          </details>
+        </section>
+
+        <!-- 2. BOOT ORDER -->
+        <section class="dia" id="d2">
+          <div class="dia-head">
+            <span class="num">02</span>
+            <h2>Boot &amp; wiring order</h2>
+          </div>
+          <p class="dia-sub">
+            The order things start in matters — config fails fast, and the hasher precomputes the
+            dummy hash <em>before</em> any request can arrive.
+          </p>
+          <div class="canvas">
+            <div class="pipe">
+              <div class="stage">
+                <div class="sn">fail fast</div>
+                <div class="sl">loadConfig()</div>
+                <div class="sx">validate env, name bad vars</div>
+              </div>
+              <div class="stage">
+                <div class="sn">security</div>
+                <div class="sl">helmet · under-pressure</div>
+                <div class="sx">headers + load shedding</div>
+              </div>
+              <div class="stage">
+                <div class="sn">docs</div>
+                <div class="sl">swagger · Scalar</div>
+                <div class="sx">OpenAPI + /docs</div>
+              </div>
+              <div class="stage">
+                <div class="sn">data</div>
+                <div class="sl">connectRedis()</div>
+                <div class="sx">client + onClose quit</div>
+              </div>
+              <div class="stage">
+                <div class="sn">crypto</div>
+                <div class="sl">hasher.init()</div>
+                <div class="sx">precompute dummy hash</div>
+              </div>
+              <div class="stage">
+                <div class="sn">wire</div>
+                <div class="sl">hooks · handlers · routes</div>
+                <div class="sx">IP limit, RFC 9457, endpoints</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Left to right = startup sequence. Config is validated first so a bad value crashes
+                the process with the offending variable named, not mid-request.
+                <code>hasher.init()</code> runs the boot-time dummy hash used for timing defense.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "Boot order is deliberate: config validates and fails fast, then the hasher
+                precomputes the dummy hash so the very first login is already timing-safe."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart LR
+  C[loadConfig&lt;br/&gt;validate env] --&gt; S[helmet + under-pressure] --&gt; D[swagger + Scalar]
+  D --&gt; R[connectRedis] --&gt; H[hasher.init&lt;br/&gt;precompute dummy hash] --&gt; W[hooks + error handlers + routes]</code></pre>
+          </details>
+        </section>
+
+        <!-- 3. REQUEST LIFECYCLE -->
+        <section class="dia" id="d3">
+          <div class="dia-head">
+            <span class="num">03</span>
+            <h2>Request lifecycle (Fastify hooks)</h2>
+          </div>
+          <p class="dia-sub">
+            Every request runs this gauntlet before your handler — and the error surface catches
+            anything that throws.
+          </p>
+          <div class="canvas">
+            <ol class="flow">
+              <li>
+                <span class="st">onRequest → per-IP rate limit</span><br /><span class="sd"
+                  >Redis <code>INCR</code> fixed window. Probes opt out via
+                  <code>skipIpRateLimit</code>. Over cap → <code>429</code>.</span
+                >
+              </li>
+              <li>
+                <span class="st">Content-type parser</span><br /><span class="sd"
+                  ><code>text/plain</code> parser removed, so non-JSON → <code>415</code>. Body
+                  capped at 16 KiB → <code>413</code>.</span
+                >
+              </li>
+              <li>
+                <span class="st">Schema validation (AJV)</span><br /><span class="sd"
+                  ><code>coerceTypes:false</code>, <code>additionalProperties:false</code> — wrong
+                  types and unknown fields are rejected, not coerced/stripped. Fail →
+                  <code>400</code>.</span
+                >
+              </li>
+              <li>
+                <span class="st">Route handler</span><br /><span class="sd"
+                  >Domain logic runs: normalize, policy, hash, Redis. May
+                  <code>throw new ProblemError(...)</code>.</span
+                >
+              </li>
+              <li>
+                <span class="st">onSend → X-Request-Id</span><br /><span class="sd"
+                  >Correlation id echoed on every response (accepted if well-formed, else
+                  minted).</span
+                >
+              </li>
+              <li>
+                <span class="st">onResponse → metrics</span><br /><span class="sd"
+                  >Counter by method/route/status; route uses the <em>template</em> so cardinality
+                  stays bounded.</span
+                >
+              </li>
+            </ol>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Cross-cutting concerns are <strong>hooks</strong>, not per-route code, so they can't
+                be forgotten on a route. The single error handler converts everything — validation,
+                404/405, 413/415, thrown problems, unexpected 500s — into one RFC 9457 shape.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "Security-critical gates are framework hooks, so they apply uniformly. The AJV
+                config is deliberately the opposite of Fastify's defaults — strict rejection, no
+                coercion — because this is an auth API."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart TD
+  A[onRequest: per-IP rate limit] --&gt; B[content-type check&lt;br/&gt;415 / 413]
+  B --&gt; C[AJV schema validate&lt;br/&gt;no coercion, no extra fields → 400]
+  C --&gt; D[route handler&lt;br/&gt;may throw ProblemError]
+  D --&gt; E[onSend: X-Request-Id]
+  E --&gt; F[onResponse: metrics by template route]
+  D -.throws.-&gt; G[setErrorHandler → RFC 9457 problem+json]</code></pre>
+          </details>
+        </section>
+
+        <!-- 4. CREATE USER -->
+        <section class="dia" id="d4">
+          <div class="dia-head">
+            <span class="num">04</span>
+            <h2>Create-user flow</h2>
+          </div>
+          <p class="dia-sub">
+            <code>POST /v1/users</code> — normalize, policy-check, hash, then let Redis decide
+            uniqueness atomically.
+          </p>
+          <div class="canvas">
+            <ol class="flow">
+              <li>
+                <span class="st">normalizeUsername()</span><br /><span class="sd"
+                  >NFC → trim → lowercase → charset. Invalid →
+                  <code>422 INVALID_USERNAME</code>.</span
+                >
+              </li>
+              <li>
+                <span class="st">validatePassword()</span><br /><span class="sd"
+                  >NIST policy: ≥15 code points, blocklist, no username-containment. Returns
+                  <em>all</em> violations → <code>422 WEAK_PASSWORD</code>.</span
+                >
+              </li>
+              <li>
+                <span class="st">hasher.hash()</span><br /><span class="sd"
+                  >Argon2id, through the concurrency gate.
+                  <strong>Hash happens before the write</strong> so a conflict costs the same as a
+                  success — no timing oracle.</span
+                >
+              </li>
+              <li>
+                <span class="st">SET user:&lt;name&gt; … NX</span><br /><span class="sd"
+                  >Atomic create-if-absent.</span
+                >
+              </li>
+            </ol>
+            <div class="branch" style="margin-top: 16px">
+              <div class="lane ok">
+                <h4>◆ reply not null</h4>
+                <p><strong>201 Created</strong> + <code>Location: /v1/users/&lt;name&gt;</code></p>
+                <p>audit <code>user.created</code></p>
+              </div>
+              <div class="lane bad">
+                <h4>◆ reply null (key existed)</h4>
+                <p><strong>409 USERNAME_TAKEN</strong></p>
+                <p>audit <code>user.create_conflict</code></p>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                The uniqueness decision is a single <code>SET NX</code>. A <code>nil</code> reply
+                <em>is</em> the "already taken" verdict — there's no separate
+                <code>EXISTS</code> check, so two racing signups can't both win.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "I treated uniqueness as an atomicity problem. <code>SET NX</code> makes it a
+                property of the datastore, not of application discipline — the classic
+                check-then-set race is structurally impossible."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart TD
+  A[POST /v1/users] --&gt; B{normalize username}
+  B --&gt;|invalid| E1[422 invalid-username]
+  B --&gt;|ok| C{password policy}
+  C --&gt;|violations| E2[422 weak-password&lt;br/&gt;all rules at once]
+  C --&gt;|ok| H[Argon2id hash&lt;br/&gt;before the write]
+  H --&gt; S[SET user:&lt;name&gt; json NX]
+  S --&gt;|reply ok| OK[201 Created + Location&lt;br/&gt;audit user.created]
+  S --&gt;|reply nil| CF[409 username-taken&lt;br/&gt;audit user.create_conflict]</code></pre>
+          </details>
+        </section>
+
+        <!-- 5. LOGIN SEQUENCE -->
+        <section class="dia" id="d5">
+          <div class="dia-head">
+            <span class="num">05</span>
+            <h2>Login — the timing-safe sequence ★</h2>
+          </div>
+          <p class="dia-sub">
+            The centerpiece. Unknown-user, wrong-password, and bad-format all cost the same and
+            return the same <code>401</code>.
+          </p>
+          <div class="canvas">
+            <svg
+              class="dsvg"
+              viewBox="0 0 860 620"
+              width="860"
+              role="img"
+              aria-label="Login sequence diagram"
+            >
+              <defs>
+                <marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                  <path class="ahp" d="M0,0 L7,3 L0,6 Z" />
+                </marker>
+                <marker id="ah-ok" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                  <path class="ahp-ok" d="M0,0 L7,3 L0,6 Z" />
+                </marker>
+                <marker
+                  id="ah-bad"
+                  markerWidth="9"
+                  markerHeight="9"
+                  refX="7"
+                  refY="3"
+                  orient="auto"
+                >
+                  <path class="ahp-bad" d="M0,0 L7,3 L0,6 Z" />
+                </marker>
+              </defs>
+              <!-- actor headers -->
+              <rect class="node" x="40" y="16" width="140" height="42" rx="9" />
+              <text x="110" y="42" text-anchor="middle">Caller</text>
+              <rect class="node accent" x="360" y="16" width="140" height="42" rx="9" />
+              <text x="430" y="42" text-anchor="middle">API</text>
+              <path
+                class="node store"
+                d="M672,20 h128 v34 a64,8 0 0 1 -128,0 v-34 a64,8 0 0 1 128,0"
+              />
+              <text x="736" y="44" text-anchor="middle">Redis</text>
+              <!-- lifelines -->
+              <line class="life" x1="110" y1="58" x2="110" y2="596" />
+              <line class="life" x1="430" y1="58" x2="430" y2="596" />
+              <line class="life" x1="736" y1="58" x2="736" y2="596" />
+
+              <path class="edge" d="M110,96 L426,96" marker-end="url(#ah2)" />
+              <text class="elabel" x="120" y="88">POST /v1/auth/login</text>
+
+              <path class="edge" d="M430,140 L732,140" marker-end="url(#ah2)" />
+              <text class="elabel" x="440" y="132">
+                INCR rl:login-failures:&lt;user&gt; — atomic gate, before any hash
+              </text>
+              <text class="elabel" x="440" y="164" style="fill: var(--red)">
+                ↳ over cap → 429 + Retry-After (identical for real/fake user)
+              </text>
+
+              <path class="edge" d="M430,204 L732,204" marker-end="url(#ah2)" />
+              <text class="elabel" x="440" y="196">GET user:&lt;normalized&gt;</text>
+
+              <!-- self verify -->
+              <path class="edge" d="M430,244 h56 v40 h-52" marker-end="url(#ah2)" />
+              <rect class="node warn" x="300" y="292" width="360" height="52" rx="9" />
+              <text x="480" y="313" text-anchor="middle" style="font-size: 12px">
+                Argon2id verify — real hash if user exists,
+              </text>
+              <text x="480" y="331" text-anchor="middle" style="font-size: 12px">
+                else DUMMY hash · same wall-clock either way
+              </text>
+
+              <path class="edge ret" d="M486,382 L732,382" marker-end="url(#ah2)" />
+              <text class="elabel" x="440" y="374">
+                opt: SET user … XX (rehash to current params)
+              </text>
+
+              <path class="edge ok" d="M486,426 L732,426" marker-end="url(#ah-ok)" />
+              <text class="elabel" x="440" y="418">on success: DEL failure window</text>
+
+              <path class="edge ok" d="M426,474 L110,474" marker-end="url(#ah-ok)" />
+              <text class="elabel" x="120" y="466" style="fill: var(--green)">
+                200 { authenticated: true }
+              </text>
+
+              <path class="edge bad" d="M426,528 L110,528" marker-end="url(#ah-bad)" />
+              <text class="elabel" x="120" y="520" style="fill: var(--red)">
+                401 — identical body · headers · timing
+              </text>
+
+              <text class="sm" x="110" y="566">wrong password · unknown user · bad format</text>
+              <text class="sm" x="110" y="582">→ all indistinguishable</text>
+            </svg>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Two things make this safe.
+                <strong>The gate is an atomic <code>INCR</code> before the hash</strong> (a
+                read-only peek would let a concurrent burst slip past the cap — that was the real
+                TOCTOU bug the review caught). And
+                <strong>the unknown-user path still runs a full Argon2id verify</strong> against a
+                dummy hash, so timing can't tell the cases apart.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "A wrong password and an unknown user are byte-identical in body, headers, and
+                timing. The limiter increments before verifying, so it's both the brute-force cap
+                and race-safe."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>sequenceDiagram
+  participant C as Caller
+  participant A as API
+  participant R as Redis
+  C-&gt;&gt;A: POST /v1/auth/login
+  A-&gt;&gt;R: INCR failure window (atomic, before hash)
+  alt window exhausted
+    A--&gt;&gt;C: 429 + Retry-After
+  else
+    A-&gt;&gt;R: GET user:&lt;normalized&gt;
+    alt user exists
+      A-&gt;&gt;A: argon2id verify (19 MiB, t=2)
+      opt params outdated
+        A-&gt;&gt;R: SET ... XX (rehash)
+      end
+    else user unknown / bad format
+      A-&gt;&gt;A: argon2id verify vs DUMMY (same cost)
+    end
+    alt verified
+      A-&gt;&gt;R: DEL failure window
+      A--&gt;&gt;C: 200 authenticated
+    else
+      A--&gt;&gt;C: 401 (byte-identical for every failure)
+    end
+  end</code></pre>
+          </details>
+        </section>
+
+        <!-- 6. RATE LIMITER -->
+        <section class="dia" id="d6">
+          <div class="dia-head">
+            <span class="num">06</span>
+            <h2>Rate limiter &amp; the TOCTOU fix</h2>
+          </div>
+          <p class="dia-sub">
+            Two windows, both in Redis. One atomic <code>MULTI</code> per hit — and the ordering
+            that closed a real race.
+          </p>
+          <div class="canvas">
+            <div class="stores" style="margin-bottom: 18px">
+              <div class="kv">
+                <div class="key">rl:ip:&lt;ip&gt;</div>
+                <div class="val">
+                  All traffic, per source IP. 100 / 60s default. Enforced in the onRequest hook.
+                </div>
+                <div class="op"><span>INCR</span><span>EXPIRE NX</span><span>TTL</span></div>
+              </div>
+              <div class="kv">
+                <div class="key">rl:login-failures:&lt;user&gt;</div>
+                <div class="val">
+                  Login failures only, per submitted username (real or fake). 10 / 15min. Cleared on
+                  success.
+                </div>
+                <div class="op">
+                  <span>INCR</span><span>EXPIRE NX</span><span>TTL</span><span>DEL</span>
+                </div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="lane bad">
+                <h4>✗ the racy design (rejected)</h4>
+                <p><code>peek</code> → if count &lt; max → verify → <code>incr</code></p>
+                <p>
+                  A burst of guesses all read <code>count &lt; max</code> before any increments
+                  land, so <strong>all</strong> slip past the cap. HIGH-severity TOCTOU.
+                </p>
+              </div>
+              <div class="lane ok">
+                <h4>✓ the shipped design</h4>
+                <p>
+                  <code>hit()</code>: atomic <code>INCR</code> first, <em>then</em> compare to max
+                </p>
+                <p>
+                  Redis serializes the increments, so at most <code>max</code> guesses ever reach
+                  the expensive verify. Window clears on success.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                <code>INCR</code> + <code>EXPIRE NX</code> + <code>TTL</code> run in one
+                <code>MULTI</code>, so the window's expiry is set exactly once by whoever creates
+                the key. State in Redis = the cap holds across every replica; an in-memory limiter
+                would multiply the threshold by the instance count.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "The adversarial review found a TOCTOU here: peek-then-check let a concurrent burst
+                bypass the cap. The fix is to increment first and read the returned count — Redis
+                serializes it. I added a concurrency regression test."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart TD
+  H["hit(policy, subject)"] --&gt; M[MULTI: INCR key · EXPIRE key NX · TTL key]
+  M --&gt; Q{count &lt;= max?}
+  Q --&gt;|yes| P[allowed → run Argon2id verify]
+  Q --&gt;|no| L[429 + RateLimit / Retry-After headers]
+  P --&gt;|login success| D["clear(): DEL key"]</code></pre>
+          </details>
+        </section>
+
+        <!-- 7. HASHING GATE -->
+        <section class="dia" id="d7">
+          <div class="dia-head">
+            <span class="num">07</span>
+            <h2>Password hashing: the memory gate</h2>
+          </div>
+          <p class="dia-sub">
+            Argon2id is memory-hard by design — so unbounded concurrency would be a self-inflicted
+            DoS. A <code>p-limit</code> gate bounds it.
+          </p>
+          <div class="canvas">
+            <svg
+              class="dsvg"
+              viewBox="0 0 860 320"
+              width="860"
+              role="img"
+              aria-label="Hashing concurrency gate"
+            >
+              <defs>
+                <marker id="ah3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                  <path class="ahp" d="M0,0 L7,3 L0,6 Z" />
+                </marker>
+              </defs>
+              <text class="sm" x="40" y="40">incoming hash / verify calls</text>
+              <rect class="node" x="40" y="52" width="150" height="34" rx="8" />
+              <text x="115" y="74" text-anchor="middle">login burst ×N</text>
+              <rect class="node accent" x="300" y="40" width="180" height="70" rx="12" />
+              <text class="title" x="390" y="70" text-anchor="middle">p-limit gate</text>
+              <text class="sm" x="390" y="90" text-anchor="middle">maxConcurrency = 8</text>
+              <rect class="node ok" x="600" y="26" width="220" height="30" rx="7" />
+              <text x="710" y="46" text-anchor="middle" style="font-size: 12px">
+                active ≤ 8 → 8 × 19 MiB ≈ 152 MiB
+              </text>
+              <rect class="node warn" x="600" y="72" width="220" height="30" rx="7" />
+              <text x="710" y="92" text-anchor="middle" style="font-size: 12px">
+                queued → authapi_hash_queued gauge
+              </text>
+              <path class="edge" d="M190,69 L296,72" marker-end="url(#ah3)" />
+              <path class="edge" d="M480,60 L596,42" marker-end="url(#ah3)" />
+              <path class="edge" d="M480,82 L596,86" marker-end="url(#ah3)" />
+
+              <line class="life" x1="40" y1="140" x2="820" y2="140" />
+              <text class="sm" x="40" y="170">two more jobs the gate enables:</text>
+              <rect class="node" x="40" y="184" width="370" height="104" rx="10" />
+              <text class="title" x="60" y="210">Timing equalization</text>
+              <text class="sm" x="60" y="232">burnDummyVerify() runs a real verify against</text>
+              <text class="sm" x="60" y="250">a boot-time dummy hash when no user exists —</text>
+              <text class="sm" x="60" y="268">unknown-user costs the same as wrong-password.</text>
+              <rect class="node" x="450" y="184" width="370" height="104" rx="10" />
+              <text class="title" x="470" y="210">Rehash on login</text>
+              <text class="sm" x="470" y="232">PHC string embeds params; needsRehash() true →</text>
+              <text class="sm" x="470" y="250">re-hash + SET … XX. The user base upgrades</text>
+              <text class="sm" x="470" y="268">
+                itself one login at a time — no mass migration.
+              </text>
+            </svg>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Each in-flight hash reserves ~19 MiB. The gate caps that at
+                <code>8 × 19 ≈ 152 MiB</code> worst case; the rest queue. The
+                <code>hash_queued</code> gauge is your <strong>scale-out signal</strong> — it rises
+                while requests are merely slow, before they error.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "Argon2's memory-hardness is the security feature and the operational risk. The
+                p-limit gate makes worst-case hashing memory a bounded, predictable number instead
+                of an OOM under load."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart LR
+  N[N concurrent hash/verify] --&gt; G[p-limit gate&lt;br/&gt;maxConcurrency = 8]
+  G --&gt; A[active ≤ 8&lt;br/&gt;≈ 152 MiB worst case]
+  G --&gt; Q[queued&lt;br/&gt;authapi_hash_queued → scale out]</code></pre>
+          </details>
+        </section>
+
+        <!-- 8. DATA MODEL -->
+        <section class="dia" id="d8">
+          <div class="dia-head">
+            <span class="num">08</span>
+            <h2>Redis data model</h2>
+          </div>
+          <p class="dia-sub">Three key shapes. That's the entire persistent footprint.</p>
+          <div class="canvas">
+            <div class="stores">
+              <div class="kv">
+                <div class="key">user:&lt;normalized&gt;</div>
+                <div class="val">
+                  One JSON blob per user:
+                  <code>{ username, passwordHash, createdAt, passwordRehashedAt? }</code>. Single
+                  key, not a hash + index — removes index-desync bugs.
+                </div>
+                <div class="op"><span>SET NX</span><span>GET</span><span>SET XX</span></div>
+              </div>
+              <div class="kv">
+                <div class="key">rl:ip:&lt;ip&gt;</div>
+                <div class="val">Per-IP fixed-window counter. TTL = window. All traffic.</div>
+                <div class="op"><span>INCR</span><span>EXPIRE NX</span><span>TTL</span></div>
+              </div>
+              <div class="kv">
+                <div class="key">rl:login-failures:&lt;user&gt;</div>
+                <div class="val">
+                  Per-username failure counter. Keyed on the <em>submitted</em> name so it can't
+                  probe existence. Cleared on success.
+                </div>
+                <div class="op">
+                  <span>INCR</span><span>EXPIRE NX</span><span>TTL</span><span>DEL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                The stored record is <strong>username + hash + timestamps, nothing else</strong> —
+                data minimization (PIPEDA). The whole user lives under one key so the
+                <code>SET NX</code> uniqueness guarantee covers the entire record atomically.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "Storing the user as a single JSON value under one key is what lets
+                <code>SET NX</code> be the whole uniqueness mechanism. It also means there's no
+                separate index to fall out of sync."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart LR
+  U["user:&lt;name&gt;&lt;br/&gt;{username, passwordHash, createdAt}"]:::k
+  I["rl:ip:&lt;ip&gt;&lt;br/&gt;counter + TTL"]:::k
+  F["rl:login-failures:&lt;user&gt;&lt;br/&gt;counter + TTL, cleared on success"]:::k
+  classDef k fill:#0f766e18,stroke:#0f766e;</code></pre>
+          </details>
+        </section>
+
+        <!-- 9. ERROR MODEL -->
+        <section class="dia" id="d9">
+          <div class="dia-head">
+            <span class="num">09</span>
+            <h2>Error model — one shape, every failure</h2>
+          </div>
+          <p class="dia-sub">
+            Every non-2xx is <code>application/problem+json</code> (RFC 9457) with a stable
+            <code>code</code> and <code>requestId</code>.
+          </p>
+          <div class="canvas">
+            <div class="dtree">
+              <div class="drow">
+                <span class="cond">Body fails schema</span><span class="code c4">400</span
+                ><span class="desc">VALIDATION_ERROR · errors[]</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Not valid JSON</span><span class="code c4">400</span
+                ><span class="desc">MALFORMED_BODY</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Wrong / unknown login</span><span class="code c5">401</span
+                ><span class="desc">INVALID_CREDENTIALS (identical)</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Unknown path</span><span class="code c4">404</span
+                ><span class="desc">NOT_FOUND</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Wrong method on known path</span><span class="code c4">405</span
+                ><span class="desc">METHOD_NOT_ALLOWED + Allow</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Username exists</span><span class="code c2">409</span
+                ><span class="desc">USERNAME_TAKEN</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Body &gt; 16 KiB</span><span class="code c4">413</span
+                ><span class="desc">PAYLOAD_TOO_LARGE</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Non-JSON content-type</span><span class="code c4">415</span
+                ><span class="desc">UNSUPPORTED_MEDIA_TYPE</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Bad username / weak password</span
+                ><span class="code c2">422</span
+                ><span class="desc">INVALID_USERNAME · WEAK_PASSWORD</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Rate limited</span><span class="code c5">429</span
+                ><span class="desc">RATE_LIMITED + Retry-After</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Unexpected</span><span class="code c5">500</span
+                ><span class="desc">INTERNAL_ERROR (sanitized)</span>
+              </div>
+              <div class="drow">
+                <span class="cond">Overloaded / Redis down</span><span class="code c5">503</span
+                ><span class="desc">SERVICE_UNAVAILABLE</span>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Registration failures list <strong>every</strong> violated rule at once (fix in one
+                round trip). Login failure is the one place detail is withheld — a generic
+                <code>401</code> — because uniformity there is an enumeration defense.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "Error format is a standards-citation exercise, not an invention. One RFC 9457 shape
+                everywhere, each with a stable machine-readable code and a requestId that correlates
+                to the logs."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart TD
+  X[any non-2xx] --&gt; P[problem+json&lt;br/&gt;type · title · status · code · requestId]
+  P --&gt; V[400 validation / malformed]
+  P --&gt; A[401 invalid-credentials — identical]
+  P --&gt; M[404 · 405+Allow]
+  P --&gt; C[409 taken · 413 · 415 · 422]
+  P --&gt; R[429 +Retry-After · 500 · 503]</code></pre>
+          </details>
+        </section>
+
+        <!-- 10. COMPONENT LAYERS -->
+        <section class="dia" id="d10">
+          <div class="dia-head">
+            <span class="num">10</span>
+            <h2>Component layers</h2>
+          </div>
+          <p class="dia-sub">
+            A strict dependency direction — HTTP knowledge stays at the top, the domain knows
+            nothing about Fastify.
+          </p>
+          <div class="canvas">
+            <div class="layers">
+              <div class="layer">
+                <span class="lname">server.ts</span
+                ><span class="ldesc"
+                  >boot, tracing, graceful shutdown (<code>close-with-grace</code>)</span
+                >
+              </div>
+              <div class="layer rule">↓ builds</div>
+              <div class="layer">
+                <span class="lname">app.ts</span
+                ><span class="ldesc"
+                  >wiring · hooks (IP limit, request-id, metrics) · RFC 9457 error surface</span
+                >
+              </div>
+              <div class="layer rule">↓ registers</div>
+              <div class="layer">
+                <span class="lname">routes/</span
+                ><span class="ldesc"
+                  ><code>users</code> · <code>auth</code> · <code>health</code> ·
+                  <code>metrics</code> — translate HTTP ↔ domain</span
+                >
+              </div>
+              <div class="layer rule">↓ call</div>
+              <div class="layer">
+                <span class="lname">services/</span
+                ><span class="ldesc"
+                  ><code>user-service</code> — owns the Redis key layout: <code>create</code>,
+                  <code>verifyCredentials</code></span
+                >
+              </div>
+              <div class="layer">
+                <span class="lname">domain/</span
+                ><span class="ldesc"
+                  ><code>username</code> · <code>password-policy</code> ·
+                  <code>password-hasher</code> · <code>blocklist</code> — zero HTTP knowledge</span
+                >
+              </div>
+              <div class="layer">
+                <span class="lname">plugins/</span
+                ><span class="ldesc"
+                  ><code>redis</code> client · <code>rate-limit</code> — infrastructure
+                  adapters</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Nothing below <code>app.ts</code> imports Fastify reply types.
+                <strong>Branded types</strong> (<code>NormalizedUsername</code>,
+                <code>PasswordHash</code>) make crossing a layer with the wrong value — a raw
+                username as a key, plaintext where a hash belongs — a <em>compile</em> error.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "The domain is pure and testable in isolation; routes are the only place that knows
+                about HTTP. Branded nominal types enforce the boundaries at compile time, not in
+                review."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart TD
+  server[server.ts] --&gt; app[app.ts&lt;br/&gt;hooks + error surface]
+  app --&gt; routes[routes/]
+  routes --&gt; svc[services/user-service]
+  routes --&gt; domain[domain/&lt;br/&gt;username · policy · hasher]
+  svc --&gt; plugins[plugins/&lt;br/&gt;redis · rate-limit]
+  svc --&gt; domain</code></pre>
+          </details>
+        </section>
+
+        <!-- 11. TESTING -->
+        <section class="dia" id="d11">
+          <div class="dia-head">
+            <span class="num">11</span>
+            <h2>Testing strategy</h2>
+          </div>
+          <p class="dia-sub">
+            Five layers, plus mutation testing that checks the tests themselves. 79 tests, ~96%
+            coverage.
+          </p>
+          <div class="canvas">
+            <div class="pyramid">
+              <div class="prow cap">
+                <div class="pl">Mutation testing — Stryker</div>
+                <div class="px">
+                  mutates source, fails CI if tests don't kill it · 87% (gate 80%)
+                </div>
+              </div>
+              <div class="prow l1">
+                <div class="pl">Contract</div>
+                <div class="px">live responses vs committed openapi.json</div>
+              </div>
+              <div class="prow l2">
+                <div class="pl">Security attack-suite</div>
+                <div class="px">each test is an attack that must fail</div>
+              </div>
+              <div class="prow l3">
+                <div class="pl">Integration — Testcontainers real redis:8</div>
+                <div class="px">race, identical-401, rehash, both limiters, protocol edges</div>
+              </div>
+              <div class="prow l4">
+                <div class="pl">Unit + Property (fast-check)</div>
+                <div class="px">policy · username · problems + adversarial Unicode fuzzing</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Wide base of fast unit + property tests; real-Redis integration for the things that
+                only Redis semantics can prove (NX, MULTI, TTL). The
+                <strong>cap on top is mutation testing</strong> — it measures whether assertions
+                would actually catch a regression, not just which lines ran.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "Coverage tells you a line executed; mutation testing tells you a test would fail if
+                that line broke. A Stryker probe even deleted the dummy-verify — the timing test
+                caught it, which proves the defense has a real regression guard."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart TD
+  U[Unit + Property / fast-check] --&gt; I[Integration&lt;br/&gt;Testcontainers real redis:8]
+  I --&gt; S[Security attack-suite] --&gt; C[Contract vs openapi.json]
+  C --&gt; M[Mutation testing / Stryker&lt;br/&gt;87%, gate 80%]</code></pre>
+          </details>
+        </section>
+
+        <!-- 12. CI/CD -->
+        <section class="dia" id="d12">
+          <div class="dia-head">
+            <span class="num">12</span>
+            <h2>CI/CD pipeline</h2>
+          </div>
+          <p class="dia-sub">
+            Every push runs the full gate. A red check blocks merge (branch protection on).
+          </p>
+          <div class="canvas">
+            <div class="pipe">
+              <div class="stage">
+                <div class="sn">01</div>
+                <div class="sl">lint</div>
+                <div class="sx">ESLint + Prettier</div>
+              </div>
+              <div class="stage">
+                <div class="sn">02</div>
+                <div class="sl">typecheck</div>
+                <div class="sx">tsc strict</div>
+              </div>
+              <div class="stage">
+                <div class="sn">03</div>
+                <div class="sl">test</div>
+                <div class="sx">real Redis + coverage gate</div>
+              </div>
+              <div class="stage">
+                <div class="sn">04</div>
+                <div class="sl">audit</div>
+                <div class="sx">npm audit high+</div>
+              </div>
+              <div class="stage">
+                <div class="sn">05</div>
+                <div class="sl">openapi drift</div>
+                <div class="sx">regen + diff + Spectral</div>
+              </div>
+              <div class="stage">
+                <div class="sn">06</div>
+                <div class="sl">docker</div>
+                <div class="sx">build + non-root assert</div>
+              </div>
+            </div>
+            <div style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap">
+              <span
+                class="kv"
+                style="border-left-color: var(--blue); padding: 8px 12px; font-size: 0.82rem"
+                >+ CodeQL security analysis</span
+              >
+              <span
+                class="kv"
+                style="border-left-color: var(--blue); padding: 8px 12px; font-size: 0.82rem"
+                >+ IaC: tflint · checkov · tofu test</span
+              >
+              <span
+                class="kv"
+                style="border-left-color: var(--blue); padding: 8px 12px; font-size: 0.82rem"
+                >+ Dependabot: npm · actions · docker · terraform</span
+              >
+            </div>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                The <strong>OpenAPI drift check</strong> regenerates the spec from the schemas and
+                fails if it differs from the committed file — so the docs literally cannot lie. The
+                Docker job asserts the image runs as a non-root uid and ships zero devDependencies.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "CI enforces the invariants I care about: real-Redis tests, a coverage gate, a
+                security scan, and a spec-drift check so the OpenAPI contract stays honest
+                automatically."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart LR
+  L[lint] --&gt; T[typecheck] --&gt; TE[test vs real Redis + coverage]
+  TE --&gt; AU[npm audit high+] --&gt; OA[OpenAPI drift + Spectral] --&gt; DK[docker build + non-root assert]
+  subgraph parallel [also on every push]
+    CQ[CodeQL]
+    IAC[tflint · checkov · tofu test]
+  end</code></pre>
+          </details>
+        </section>
+
+        <!-- 13. INFRA -->
+        <section class="dia" id="d13">
+          <div class="dia-head">
+            <span class="num">13</span>
+            <h2>AWS infrastructure (OpenTofu)</h2>
+          </div>
+          <p class="dia-sub">
+            Defined in <code>infra/</code>, validated not applied. Multi-env (dev/staging/prod) with
+            per-env state.
+          </p>
+          <div class="canvas">
+            <svg
+              class="dsvg"
+              viewBox="0 0 860 400"
+              width="860"
+              role="img"
+              aria-label="AWS infrastructure topology"
+            >
+              <defs>
+                <marker id="ah4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                  <path class="ahp" d="M0,0 L7,3 L0,6 Z" />
+                </marker>
+              </defs>
+              <rect class="node" x="40" y="40" width="150" height="44" rx="9" />
+              <text x="115" y="67" text-anchor="middle">Internal callers</text>
+              <rect class="node" x="250" y="40" width="160" height="44" rx="9" />
+              <text x="330" y="61" text-anchor="middle">ALB (HTTPS)</text>
+              <text class="sm" x="330" y="77" text-anchor="middle">health → /readyz</text>
+
+              <rect class="node accent" x="250" y="130" width="330" height="140" rx="12" />
+              <text class="title" x="415" y="156" text-anchor="middle">ECS Fargate service</text>
+              <rect class="node" x="270" y="170" width="140" height="40" rx="8" />
+              <text x="340" y="194" text-anchor="middle" style="font-size: 12px">
+                task (non-root)
+              </text>
+              <rect class="node" x="420" y="170" width="140" height="40" rx="8" />
+              <text x="490" y="194" text-anchor="middle" style="font-size: 12px">
+                task (non-root)
+              </text>
+              <text class="sm" x="415" y="238" text-anchor="middle">
+                target-tracking autoscaling · circuit-breaker deploys
+              </text>
+
+              <path
+                class="node store"
+                d="M650,150 h160 v70 a80,10 0 0 1 -160,0 v-70 a80,10 0 0 1 160,0"
+              />
+              <text class="title" x="730" y="176" text-anchor="middle">ElastiCache</text>
+              <text class="sm" x="730" y="194" text-anchor="middle">encrypt at rest</text>
+              <text class="sm" x="730" y="210" text-anchor="middle">+ in transit</text>
+
+              <rect class="node" x="40" y="150" width="150" height="40" rx="8" />
+              <text x="115" y="174" text-anchor="middle" style="font-size: 12px">
+                ECR (scan, immutable)
+              </text>
+              <rect class="node" x="40" y="206" width="150" height="40" rx="8" />
+              <text x="115" y="230" text-anchor="middle" style="font-size: 12px">
+                Secrets Manager
+              </text>
+              <rect class="node" x="40" y="262" width="150" height="40" rx="8" />
+              <text x="115" y="286" text-anchor="middle" style="font-size: 12px">
+                SSM Param Store
+              </text>
+              <rect class="node" x="250" y="310" width="160" height="40" rx="8" />
+              <text x="330" y="334" text-anchor="middle" style="font-size: 12px">
+                CloudWatch logs
+              </text>
+
+              <path class="edge" d="M190,62 L246,62" marker-end="url(#ah4)" />
+              <path class="edge" d="M330,84 L330,128" marker-end="url(#ah4)" />
+              <path class="edge" d="M580,200 L646,190" marker-end="url(#ah4)" />
+              <text class="elabel" x="586" y="184">rediss:// + AUTH</text>
+              <path class="edge ret" d="M190,170 L266,180" marker-end="url(#ah4)" />
+              <text class="elabel" x="150" y="150">image</text>
+              <path class="edge ret" d="M190,224 L248,210" marker-end="url(#ah4)" />
+              <text class="elabel" x="150" y="204">redis token</text>
+              <path class="edge ret" d="M190,278 L248,240" marker-end="url(#ah4)" />
+              <text class="elabel" x="150" y="300">config</text>
+              <path class="edge ret" d="M360,270 L345,308" marker-end="url(#ah4)" />
+              <text class="elabel" x="366" y="296">logs</text>
+            </svg>
+          </div>
+          <div class="cap">
+            <div class="capbox read">
+              <div class="t">▸ Read it</div>
+              <p>
+                Image from ECR, secrets from <strong>Secrets Manager</strong>, non-secret config
+                from <strong>SSM</strong> — nothing sensitive in plain env or committed files.
+                <code>tofu test</code> asserts the security invariants (encryption on, SG
+                restrictions, no secret in outputs) at plan time.
+              </p>
+            </div>
+            <div class="capbox say">
+              <div class="t">▸ Say it</div>
+              <p>
+                "It's OpenTofu — the MPL-licensed Terraform fork — for ECS Fargate behind an ALB
+                with ElastiCache. Same stack Lendesk uses, and the security posture is asserted by
+                native tofu tests, not just hoped for."
+              </p>
+            </div>
+          </div>
+          <details class="src">
+            <summary>Mermaid source<button class="copy">copy</button></summary>
+            <pre><code>flowchart LR
+  U[Internal callers] --&gt; ALB[ALB HTTPS&lt;br/&gt;health → /readyz] --&gt; ECS[ECS Fargate&lt;br/&gt;non-root tasks · autoscaling]
+  ECS --&gt;|rediss:// + AUTH| EC[(ElastiCache Redis&lt;br/&gt;encrypt at rest + transit)]
+  ECR[ECR scan/immutable] -.image.-&gt; ECS
+  SM[Secrets Manager] -.redis token.-&gt; ECS
+  SSM[SSM Param Store] -.config.-&gt; ECS
+  ECS -.logs.-&gt; CW[CloudWatch]</code></pre>
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <footer>
+      13 diagrams · hand-drawn SVG/CSS (renders under the Artifact CSP) with portable Mermaid source
+      under each. Companion to the
+      <a href="https://claude.ai/code/artifact/9b78ed7d-455d-4adb-a43d-a52859131bed"
+        >256-question Q&amp;A bank</a
+      >.
+    </footer>
+
+    <script>
+      (function () {
+        'use strict';
+        // build nav
+        var nav = document.getElementById('navlinks');
+        document.querySelectorAll('section.dia').forEach(function (s) {
+          var num = s.querySelector('.num').textContent;
+          var title = s.querySelector('h2').textContent.replace('★', '').trim();
+          var a = document.createElement('a');
+          a.href = '#' + s.id;
+          a.dataset.target = s.id;
+          // Build with textContent — never innerHTML from DOM-derived text.
+          var numEl = document.createElement('span');
+          numEl.className = 'n';
+          numEl.textContent = num;
+          var titleEl = document.createElement('span');
+          titleEl.textContent = title;
+          a.appendChild(numEl);
+          a.appendChild(titleEl);
+          nav.appendChild(a);
+        });
+        // theme toggle
+        document.getElementById('themeToggle').addEventListener('click', function () {
+          var cur = document.documentElement.getAttribute('data-theme');
+          if (!cur)
+            cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+        });
+        // copy mermaid
+        document.querySelectorAll('details.src').forEach(function (d) {
+          var btn = d.querySelector('.copy'),
+            code = d.querySelector('code');
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var t = code.textContent;
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(t).then(function () {
+                var o = btn.textContent;
+                btn.textContent = 'copied ✓';
+                setTimeout(function () {
+                  btn.textContent = o;
+                }, 1200);
+              });
+            }
+          });
+        });
+        // scroll spy
+        var links = Array.prototype.slice.call(nav.querySelectorAll('a'));
+        var spy = new IntersectionObserver(
+          function (es) {
+            es.forEach(function (e) {
+              if (e.isIntersecting) {
+                links.forEach(function (l) {
+                  l.classList.toggle('active', l.dataset.target === e.target.id);
+                });
+              }
+            });
+          },
+          { rootMargin: '-80px 0px -75% 0px' },
+        );
+        document.querySelectorAll('section.dia').forEach(function (s) {
+          spy.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>
