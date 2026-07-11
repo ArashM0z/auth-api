@@ -105,6 +105,16 @@ jobs:
           soft_fail: true
           output_format: cli,sarif
           output_file_path: console,checkov.sarif
+      # GitHub ignores SARIF suppressions; drop in-source-suppressed results
+      # (the justifications live next to the skips) so only real findings
+      # reach the Security tab. Mirrors the same step in iac.yml.
+      - name: Strip in-source-suppressed results from the SARIF
+        if: always()
+        run: |
+          f="checkov.sarif"
+          [ -d "$f" ] && f="$f/results_sarif.sarif"
+          jq '.runs[].results |= map(select((.suppressions // []) | length == 0))' "$f" > "$f.tmp"
+          mv "$f.tmp" "$f"
       - name: Upload Checkov results to Security tab
         if: always()
         uses: github/codeql-action/upload-sarif@v3
