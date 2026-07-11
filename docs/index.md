@@ -51,6 +51,42 @@ RFC 9457, RFC 9110) rather than folklore.
 
 </div>
 
+## The system in one picture
+
+```mermaid
+flowchart LR
+  subgraph consumers [Internal services]
+    S1[Gateway / BFF]
+    S2[Back-office jobs]
+  end
+  A[Authentication API<br/>Fastify 5 · stateless · N replicas]
+  R[(Redis 8<br/>users + rate windows<br/>AOF everysec)]
+  P[Orchestrator / LB]
+  O[Log pipeline<br/>audit events]
+  S1 -->|POST /v1/users, /v1/auth/login| A
+  S2 --> A
+  A -->|SET NX · GET · INCR| R
+  P -.probes.-> A
+  A -.structured logs.-> O
+```
+
+And the flow everything else defends — login, timing-safe on every path:
+
+```mermaid
+flowchart LR
+  L[POST /v1/auth/login] --> G[INCR failure window<br/>atomic gate, before hash]
+  G -->|over cap| R429[429 + Retry-After]
+  G --> V{user exists?}
+  V -->|yes| H[argon2id verify]
+  V -->|no / bad format| D[argon2id verify vs DUMMY<br/>same cost]
+  H -->|ok| OK[200 · clear window]
+  H -->|wrong| X[401 byte-identical]
+  D --> X
+```
+
+All 13 diagrams, from system context to a single Redis command:
+**[Diagrams →](diagrams.md)**
+
 ## At a glance
 
 | | |
@@ -62,7 +98,25 @@ RFC 9457, RFC 9110) rather than folklore.
 | **Errors** | RFC 9457 `application/problem+json`, stable `code` + `requestId`, everywhere |
 | **Rate limiting** | Two Redis-backed windows (per-IP, per-username failures) — correct across replicas |
 | **Tests** | 79 tests, ~96% coverage, 5 layers + Stryker mutation testing (87%, gate 80%) |
-| **Infra** | OpenTofu → ECS Fargate + ALB + ElastiCache + ECR (validated, not applied) |
+| **Infra** | OpenTofu → ECS Fargate + ALB + ElastiCache + ECR — applied end-to-end on LocalStack (emulated AWS), zero spend |
+
+## The testing & verification arsenal
+
+Everything that has to pass before a change ships:
+
+| Tool | What it proves |
+| --- | --- |
+| **Vitest 4** (unit) | password policy, username normalization, problem registry |
+| **fast-check** (property-based) | thousands of adversarial Unicode inputs — normalization idempotence, never-throws, policy invariants |
+| **Testcontainers** (integration, real `redis:8`) | `SET NX` race, byte-identical 401, rehash-on-login, both rate limiters, every protocol edge — identical suite on a laptop and in CI |
+| **Security attack-suite** | each test is an attack that must fail: enumeration, timing, injection, mass assignment, CRLF, leakage |
+| **Contract tests + OpenAPI drift gate** | live responses validated against the committed `openapi.json`; CI regenerates and diffs, so docs cannot lie |
+| **Stryker (mutation testing)** | mutates the domain logic and fails CI if the tests don't kill the mutants — measures whether assertions *catch* regressions, not just line coverage. Score **87%**, gated at 80% |
+| **autocannon** (benchmark) | measured login ceiling ≈ the `HASH_MAX_CONCURRENCY ÷ verify-time` math, within 4% |
+| **Spectral** | OpenAPI contract lint |
+| **CodeQL · gitleaks · Trivy · dependency-review** | SAST, secret scan, container-image CVEs, vulnerable-dependency gate on PRs |
+| **tofu test · tflint · checkov** | IaC security invariants asserted at plan time |
+| **LocalStack apply** | the *entire* AWS stack (VPC → ECS → ElastiCache → ALB → Route 53 → Secrets) provisioned for real against emulated AWS APIs — an integration test for the Terraform itself, $0 spend. See the [live tour](../) |
 
 ## Quickstart
 
@@ -70,6 +124,10 @@ RFC 9457, RFC 9110) rather than folklore.
 docker compose up --build   # API on :3000, Redis with AOF durability
 # interactive docs (Scalar): http://localhost:3000/docs
 ```
+
+> Prefer the interactive version? The **[landing site](../)** has the deployed-
+> architecture tour, a request **[playground](../playground.html)**, and a live
+> **[rate-limiter demo](../ratelimit.html)**.
 
 > The quality priority order that drives every trade-off on this site:
 > **security > correctness > operability > throughput > feature count.**

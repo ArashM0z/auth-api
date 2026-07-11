@@ -192,7 +192,11 @@ flowchart LR
     CK[checkov: Terraform + Dockerfile + Actions]
     DR[dependency-review on PRs]
   end
-  DK -.-> DOCS[mkdocs gh-deploy → GitHub Pages]
+  subgraph iac [IaC assurance]
+    TF[tofu fmt/validate/test + tflint]
+    LS[LocalStack apply — full AWS stack<br/>provisioned on emulated APIs, $0]
+  end
+  DK -.-> DOCS[combined Pages deploy<br/>landing / + handbook /docs/]
 ```
 
 ## 13. AWS infrastructure (OpenTofu)
