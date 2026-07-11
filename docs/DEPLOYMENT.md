@@ -13,11 +13,18 @@ automatic on any infra change).
 flowchart LR
   PR[PR merged to main] --> B[build image<br/>tag = git SHA · immutable]
   B --> DEV[deploy dev<br/>automatic]
-  DEV -->|dispatch: same tag| STG[deploy staging<br/>prod-shaped, 2 AZ]
-  STG -->|dispatch: same tag| PROD{{production<br/>requires reviewer approval}}
+  DEV -->|run promote-staging<br/>on the ref — same SHA| STG[deploy staging<br/>prod-shaped, 2 AZ]
+  STG -->|run promote-prod<br/>same SHA| PROD{{production<br/>requires reviewer approval}}
   PROD --> APPLY[tofu apply + ecs wait services-stable]
   APPLY -.failure.-> CB[ECS circuit breaker<br/>auto-rollback to last stable]
 ```
+
+Four small workflows share one reusable deploy
+([`deploy-env.yml`](https://github.com/ArashM0z/auth-api/blob/main/.github/workflows/deploy-env.yml)):
+`deploy.yml` builds and ships dev on merge; `promote-staging.yml` and
+`promote-prod.yml` are **zero-input** dispatches — the artifact is identified
+by the git ref you run them on, never by a typed parameter, so build output
+can't be affected by user input (Checkov CKV_GHA_7, satisfied structurally).
 
 Three properties carry the safety story:
 
@@ -36,13 +43,13 @@ Three properties carry the safety story:
 
 ## The environments
 
-|                           | dev                          | staging                      | prod                                      |
-| ------------------------- | ---------------------------- | ---------------------------- | ----------------------------------------- |
-| **Deploy**                | automatic on merge to `main` | dispatch (promote dev's tag) | dispatch + **required approval**          |
-| **Tasks**                 | 1–3, single AZ               | 2–6, two AZs                 | 3–20, two AZs                             |
-| **Shape**                 | smallest/cheapest            | prod-shaped, smaller         | full headroom                             |
-| **Log level / retention** | debug / short                | info / medium                | info / long (forensics)                   |
-| **State**                 | own tfstate key              | own tfstate key              | own key — ideally its **own AWS account** |
+|                           | dev                          | staging                           | prod                                       |
+| ------------------------- | ---------------------------- | --------------------------------- | ------------------------------------------ |
+| **Deploy**                | automatic on merge to `main` | run `promote-staging` (no inputs) | run `promote-prod` + **required approval** |
+| **Tasks**                 | 1–3, single AZ               | 2–6, two AZs                      | 3–20, two AZs                              |
+| **Shape**                 | smallest/cheapest            | prod-shaped, smaller              | full headroom                              |
+| **Log level / retention** | debug / short                | info / medium                     | info / long (forensics)                    |
+| **State**                 | own tfstate key              | own tfstate key                   | own key — ideally its **own AWS account**  |
 
 (Per-env values live in `infra/environments/*.tfvars`; every resource is
 name-spaced by environment, so environments cannot collide.)
