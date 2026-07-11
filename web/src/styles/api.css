@@ -1,0 +1,41 @@
+/* Page CSS for api.html, copied verbatim from pages/api.html.
+   This page is standalone by design: hardcoded dark colors, monospace body,
+   no light theme, non-wrapping nav — exactly like the original (Scalar
+   supplies all styling for the reference itself). Its entry does NOT import
+   global.css, so nothing here needs to fight the shared rules. */
+body {
+  margin: 0;
+  font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  background: #0b1018;
+}
+.topnav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 18px;
+  background: #0b1018;
+  border-bottom: 1px solid #1e2a3a;
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topnav a {
+  color: #93a4bb;
+  text-decoration: none;
+  padding: 6px 11px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+}
+.topnav a:hover {
+  color: #e8eef6;
+  border-color: #1e2a3a;
+}
+.topnav a.here {
+  color: #2dd4bf;
+  border-color: #178f81;
+  background: rgba(45, 212, 191, 0.1);
+}
+.topnav .sp {
+  flex: 1;
+}
