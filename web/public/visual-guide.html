@@ -166,6 +166,30 @@
         gap: 10px;
         margin-right: auto;
       }
+      /* site-wide nav: every page of the site is one click away */
+      .xnav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .xnav a {
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 5px 9px;
+        border-radius: 6px;
+      }
+      .xnav a:hover {
+        color: var(--accent-strong);
+        background: var(--accent-wash);
+        text-decoration: none;
+      }
+      .xnav a.here {
+        color: var(--accent-strong);
+        border: 1px solid var(--accent);
+      }
       .brand .mark {
         font-family: var(--mono);
         font-size: 0.74rem;
@@ -907,9 +931,18 @@
           <span class="mark">Auth&nbsp;API</span>
           <div>
             <h1>Visual Guide</h1>
-            <span class="sub">Lendesk take-home · every subsystem as a diagram</span>
+            <span class="sub">Authentication API · every subsystem as a diagram</span>
           </div>
         </div>
+        <nav class="xnav" aria-label="Site">
+          <a href="index.html">Architecture</a>
+          <a href="api.html">API reference</a>
+          <a href="playground.html">Playground</a>
+          <a href="ratelimit.html">Rate limiter</a>
+          <a class="here" href="visual-guide.html">Visual guide</a>
+          <a href="https://arashm0z.github.io/auth-api/docs/">Docs</a>
+          <a href="https://github.com/ArashM0z/auth-api">GitHub ↗</a>
+        </nav>
         <button class="btn" id="themeToggle" aria-label="Toggle theme">Theme</button>
       </div>
     </header>
@@ -923,15 +956,12 @@
       <main>
         <p class="lede">
           The whole service, drawn. Thirteen diagrams that take you from "who calls this" down to a
-          single Redis command — each one point-at-able and captioned with what to say.
+          single Redis command — each one annotated in plain language.
         </p>
         <p class="lede-sub">
-          Every diagram below carries a collapsible <strong>Mermaid source</strong> block. It
-          renders as-is on GitHub, so you can drop any of these straight into your repo's README or
-          <code>docs/</code>. Companion to the 256-question
-          <a href="https://claude.ai/code/artifact/9b78ed7d-455d-4adb-a43d-a52859131bed"
-            >Q&amp;A bank</a
-          >.
+          Every diagram below carries a collapsible <strong>Mermaid source</strong> block that
+          renders as-is on GitHub. The long-form documentation lives in the
+          <a href="https://arashm0z.github.io/auth-api/docs/">architecture handbook</a>.
         </p>
 
         <div class="legend" aria-label="Legend">
@@ -1011,7 +1041,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "It's a stateless credential service. All state is in Redis, which is exactly why
                 the rate limiter stays correct across replicas and why horizontal scaling is
@@ -1092,7 +1122,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "Boot order is deliberate: config validates and fails fast, then the hasher
                 precomputes the dummy hash so the very first login is already timing-safe."
@@ -1168,7 +1198,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "Security-critical gates are framework hooks, so they apply uniformly. The AJV
                 config is deliberately the opposite of Fastify's defaults — strict rejection, no
@@ -1248,7 +1278,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "I treated uniqueness as an atomicity problem. <code>SET NX</code> makes it a
                 property of the datastore, not of application discipline — the classic
@@ -1380,7 +1410,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "A wrong password and an unknown user are byte-identical in body, headers, and
                 timing. The limiter increments before verifying, so it's both the brute-force cap
@@ -1480,7 +1510,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "The adversarial review found a TOCTOU here: peek-then-check let a concurrent burst
                 bypass the cap. The fix is to increment first and read the returned count — Redis
@@ -1567,7 +1597,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "Argon2's memory-hardness is the security feature and the operational risk. The
                 p-limit gate makes worst-case hashing memory a bounded, predictable number instead
@@ -1629,7 +1659,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "Storing the user as a single JSON value under one key is what lets
                 <code>SET NX</code> be the whole uniqueness mechanism. It also means there's no
@@ -1720,7 +1750,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "Error format is a standards-citation exercise, not an invention. One RFC 9457 shape
                 everywhere, each with a stable machine-readable code and a requestId that correlates
@@ -1808,7 +1838,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "The domain is pure and testable in isolation; routes are the only place that knows
                 about HTTP. Branded nominal types enforce the boundaries at compile time, not in
@@ -1875,7 +1905,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "Coverage tells you a line executed; mutation testing tells you a test would fail if
                 that line broke. A Stryker probe even deleted the dummy-verify — the timing test
@@ -1962,7 +1992,7 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "CI enforces the invariants I care about: real-Redis tests, a coverage gate, a
                 security scan, and a spec-drift check so the OpenAPI contract stays honest
@@ -2075,11 +2105,11 @@
               </p>
             </div>
             <div class="capbox say">
-              <div class="t">▸ Say it</div>
+              <div class="t">▸ In one line</div>
               <p>
                 "It's OpenTofu — the MPL-licensed Terraform fork — for ECS Fargate behind an ALB
-                with ElastiCache. Same stack Lendesk uses, and the security posture is asserted by
-                native tofu tests, not just hoped for."
+                with ElastiCache. A standard AWS service stack, and the security posture is asserted
+                by native tofu tests, not just hoped for."
               </p>
             </div>
           </div>
@@ -2097,13 +2127,7 @@
       </main>
     </div>
 
-    <footer>
-      13 diagrams · hand-drawn SVG/CSS (renders under the Artifact CSP) with portable Mermaid source
-      under each. Companion to the
-      <a href="https://claude.ai/code/artifact/9b78ed7d-455d-4adb-a43d-a52859131bed"
-        >256-question Q&amp;A bank</a
-      >.
-    </footer>
+    <footer>13 diagrams · hand-drawn SVG/CSS with portable Mermaid source under each.</footer>
 
     <script>
       (function () {

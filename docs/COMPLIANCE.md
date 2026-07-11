@@ -8,12 +8,11 @@ engineer.
 > _Informational, not legal advice. Current as of July 2026; guideline status
 > and dates should be re-verified against OSFI/ISED before relying on them._
 
-## 1. How this applies to Lendesk (the framing that matters)
+## 1. How this applies to a mortgage-technology vendor (the framing that matters)
 
-Lendesk is a **technology provider** to the mortgage market, not itself a
-federally regulated financial institution (FRFI). But its lender and bank
-customers **are** FRFIs, and OSFI's expectations reach a vendor like Lendesk
-**through** them:
+A mortgage-technology provider is typically not itself a federally regulated
+financial institution (FRFI). But its lender and bank customers **are**
+FRFIs, and OSFI's expectations reach the vendor **through** them:
 
 - **OSFI Guideline B-10 – Third-Party Risk Management** (in force **May 1,
   2024**) makes an FRFI responsible for the risk of its third parties,
@@ -33,7 +32,7 @@ that review.
 | Framework                               | Governs                                                                                                                                    | Status                                              | Why it matters here                                                                                                                                 |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **OSFI B-13** – Technology & Cyber Risk | Governance, tech operations & resilience, cyber security at FRFIs                                                                          | **In force Jan 1, 2024**                            | The bar our CI/CD, IaC, audit trail, and resilience controls are built to clear                                                                     |
-| **OSFI B-10** – Third-Party Risk        | Vendor/outsourcing & cloud risk, incl. criticality, concentration, exit                                                                    | **In force May 1, 2024**                            | The channel by which OSFI reaches Lendesk as a supplier                                                                                             |
+| **OSFI B-10** – Third-Party Risk        | Vendor/outsourcing & cloud risk, incl. criticality, concentration, exit                                                                    | **In force May 1, 2024**                            | The channel by which OSFI reaches a technology supplier                                                                                             |
 | **OSFI E-23** – Model Risk Management   | **All models, incl. AI/ML**, at all FRFIs — lifecycle, validation, monitoring                                                              | Final **Sep 11, 2025**; **effective May 1, 2027**   | The framework any AI mortgage feature must be governed under                                                                                        |
 | **OSFI–FCAC AI Report** + FIFAI         | Responsible-AI expectations; the **EDGE** principles (Explainability, Data, Governance, Ethics); FIFAI II adds an **AGILE** operating lens | Report Sep 24, 2024                                 | The soft-law shape of "responsible AI" while hard law catches up                                                                                    |
 | **PIPEDA**                              | Federal private-sector privacy (collection/consent/retention)                                                                              | **In force**                                        | Governs the personal data we store; drives data minimization                                                                                        |
@@ -70,22 +69,23 @@ drafting borrower communications), here is how I'd govern it so it survives
 E-23 and the EDGE principles — reusing the same engineering discipline as this
 service:
 
-| E-23 / EDGE expectation                   | How I'd meet it (concretely)                                                                                                                                                                                                                        |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Model inventory & risk tiering** (E-23) | Register every model; tier by materiality. A doc-extraction assistant with human review is low-risk; anything touching an underwriting/eligibility decision is high-risk and needs the full lifecycle                                               |
-| **Validation before deployment** (E-23)   | An **eval harness** — a golden set + prompt-regression tests run in CI, exactly like this repo's test layers. No prompt change ships without passing evals                                                                                          |
-| **Explainability** (EDGE-E)               | Structured, cited outputs (schema-validated JSON, source spans), and for any adverse-action-adjacent output, a human-readable rationale — never an unexplained score                                                                                |
-| **Data governance** (EDGE-D, PIPEDA)      | PII minimization and redaction before/around model calls; data-residency and retention controls; no training on customer data without explicit basis                                                                                                |
-| **Human-in-the-loop** (EDGE-G/Ethics)     | Decisions stay with a person; the model assists. Confidence thresholds route low-confidence cases to review                                                                                                                                         |
-| **Ongoing monitoring** (E-23)             | Drift, quality, and bias metrics on live traffic (same Prometheus/OTel spine already here); alerting on degradation                                                                                                                                 |
-| **Fairness / bias testing** (EDGE-Ethics) | Test for disparate outcomes across protected-ground proxies; document mitigations — critical in a lending context                                                                                                                                   |
-| **Third-party model risk** (B-10)         | Treat the LLM provider (e.g. Anthropic) as a critical third party: contractual data terms, no-training guarantees, an exit/fallback plan, cost/latency budgets, and a **concurrency gate** — the same `p-limit` pattern this repo uses for Argon2id |
+| E-23 / EDGE expectation                   | How I'd meet it (concretely)                                                                                                                                                                                                       |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Model inventory & risk tiering** (E-23) | Register every model; tier by materiality. A doc-extraction assistant with human review is low-risk; anything touching an underwriting/eligibility decision is high-risk and needs the full lifecycle                              |
+| **Validation before deployment** (E-23)   | An **eval harness** — a golden set + prompt-regression tests run in CI, exactly like this repo's test layers. No prompt change ships without passing evals                                                                         |
+| **Explainability** (EDGE-E)               | Structured, cited outputs (schema-validated JSON, source spans), and for any adverse-action-adjacent output, a human-readable rationale — never an unexplained score                                                               |
+| **Data governance** (EDGE-D, PIPEDA)      | PII minimization and redaction before/around model calls; data-residency and retention controls; no training on customer data without explicit basis                                                                               |
+| **Human-in-the-loop** (EDGE-G/Ethics)     | Decisions stay with a person; the model assists. Confidence thresholds route low-confidence cases to review                                                                                                                        |
+| **Ongoing monitoring** (E-23)             | Drift, quality, and bias metrics on live traffic (same Prometheus/OTel spine already here); alerting on degradation                                                                                                                |
+| **Fairness / bias testing** (EDGE-Ethics) | Test for disparate outcomes across protected-ground proxies; document mitigations — critical in a lending context                                                                                                                  |
+| **Third-party model risk** (B-10)         | Treat the LLM provider as a critical third party: contractual data terms, no-training guarantees, an exit/fallback plan, cost/latency budgets, and a **concurrency gate** — the same `p-limit` pattern this repo uses for Argon2id |
 
-## 5. Interview talking points
+## 5. Talking points
 
-- _"Lendesk isn't a FRFI, but its lender customers are — so OSFI's B-10 and
-  B-13 expectations reach us as a critical third party. Building to that bar
-  is a sales advantage: it shortens every customer's due-diligence."_
+- _"A mortgage-technology vendor isn't a FRFI, but its lender customers are —
+  so OSFI's B-10 and B-13 expectations reach it as a critical third party.
+  Building to that bar is a sales advantage: it shortens every customer's
+  due-diligence."_
 - _"For any AI feature touching a mortgage decision, that's a model under
   OSFI E-23 (effective May 2027). It needs governance, validation,
   explainability, and monitoring — and I'd enforce that with an eval harness

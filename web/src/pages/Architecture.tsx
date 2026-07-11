@@ -618,7 +618,7 @@ export default function Architecture() {
           </div>
         </div>
         <p className="diag-note">
-          All of this is deliberately out of scope for a two-endpoint take-home —{' '}
+          All of this is deliberately out of scope for a two-endpoint brief —{' '}
           <b style={ink}>written down, not silently skipped</b>. The point is knowing the next three moves, not building
           them prematurely.
         </p>
