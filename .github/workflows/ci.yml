@@ -47,7 +47,7 @@ jobs:
       # Testcontainers spins up redis:8-alpine using the runner's Docker —
       # the identical suite runs on a laptop and in CI.
       - run: npm run test:coverage
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -68,7 +68,7 @@ jobs:
       # doesn't kill enough mutants — coverage measures lines run, this
       # measures whether the assertions actually catch regressions.
       - run: npm run test:mutation
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutation-report
