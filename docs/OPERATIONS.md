@@ -69,8 +69,8 @@ health/metrics probes are excluded to keep traces signal-heavy.
 
 ## Performance envelope
 
-Measured (see the [README](https://github.com/ArashM0z/auth-api#measured-performance)
-for the method): login sustains ≈ **208 req/s** per instance — the deliberate
+Measured with `npm run bench` (autocannon, 10 s runs on consumer hardware —
+treat as relative): login sustains ≈ **208 req/s** per instance — the deliberate
 ceiling `HASH_MAX_CONCURRENCY ÷ verify-time ≈ 8 ÷ 0.037 s`, i.e. the security
 budget, not a bottleneck — while `/healthz` clears ~25k req/s. Need more login
 throughput? Add replicas (the tier is stateless; the Redis-backed limiter
