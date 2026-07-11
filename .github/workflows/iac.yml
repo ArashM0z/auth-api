@@ -100,7 +100,7 @@ jobs:
       # the build, so regressions are visible, not just red.
       - name: Upload Checkov results to Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: checkov-tf.sarif
           category: checkov-terraform
