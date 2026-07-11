@@ -1,0 +1,113 @@
+name: Security
+
+# Best-practice security scanning that complements CI (tests) and CodeQL
+# (SAST) and the IaC workflow (tofu/tflint/checkov for Terraform):
+#   - gitleaks       — secret scanning across history
+#   - dependency-review — blocks vulnerable/again-licensed deps on PRs
+#   - Trivy          — vulnerabilities in the production container image
+#   - checkov        — Dockerfile + GitHub Actions misconfig (repo-wide)
+# Findings surface in the repo Security tab via SARIF upload.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '30 5 * * 1' # weekly — new advisories catch old artifacts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan full history, not just the tip
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  dependency-review:
+    name: Dependency review (PRs)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  image-scan:
+    name: Container image scan (Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --target prod -t auth-api:scan .
+      - name: Trivy vulnerability scan (SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: auth-api:scan
+          format: sarif
+          output: trivy.sarif
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+      - name: Upload Trivy results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-image
+      - name: Fail on CRITICAL/HIGH (fixable)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: auth-api:scan
+          format: table
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+  checkov-config:
+    name: Checkov (Dockerfile + Actions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      # Terraform is hard-failed in iac.yml; here we cover the Dockerfile and
+      # workflow files repo-wide. soft_fail keeps new nits from blocking merge
+      # while still reporting them to the Security tab.
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: dockerfile,github_actions
+          quiet: true
+          soft_fail: true
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+      - name: Upload Checkov results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov.sarif
+          category: checkov-config

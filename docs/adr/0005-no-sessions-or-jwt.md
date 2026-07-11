@@ -5,9 +5,9 @@
 ## Context
 
 The brief asks for exactly two capabilities: create a login, authenticate a
-login. Roughly half the public submissions to similar challenges bolt on
-JWTs, and are then gradeable on token expiry, revocation, secret rotation,
-and cookie hygiene they never implemented.
+login. It is tempting to bolt on JWTs — and then you are gradeable on token
+expiry, revocation, secret rotation, and cookie hygiene you never actually
+implemented.
 
 ## Decision
 

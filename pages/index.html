@@ -1,0 +1,611 @@
+<title>Auth API — Infrastructure Validation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0b1018;
+    --panel: #121a26;
+    --panel-2: #0f1622;
+    --line: #1e2a3a;
+    --ink: #e8eef6;
+    --muted: #93a4bb;
+    --faint: #64748b;
+    --accent: #2dd4bf;
+    --accent-dim: #178f81;
+    --indigo: #8b9cf7;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --ok-bg: rgba(52, 211, 153, 0.12);
+    --warn-bg: rgba(251, 191, 36, 0.12);
+    --accent-bg: rgba(45, 212, 191, 0.1);
+    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 30px -18px rgba(0, 0, 0, 0.8);
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #eef3f9;
+      --panel: #ffffff;
+      --panel-2: #f6f9fd;
+      --line: #dde6f0;
+      --ink: #101a28;
+      --muted: #51637a;
+      --faint: #8496ac;
+      --accent: #0d9488;
+      --accent-dim: #5eead4;
+      --indigo: #4f46e5;
+      --ok: #059669;
+      --warn: #b45309;
+      --ok-bg: rgba(5, 150, 105, 0.1);
+      --warn-bg: rgba(180, 83, 9, 0.1);
+      --accent-bg: rgba(13, 148, 136, 0.08);
+      --shadow: 0 1px 2px rgba(16, 26, 40, 0.04), 0 10px 26px -20px rgba(16, 26, 40, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1018; --panel: #121a26; --panel-2: #0f1622; --line: #1e2a3a;
+    --ink: #e8eef6; --muted: #93a4bb; --faint: #64748b; --accent: #2dd4bf;
+    --accent-dim: #178f81; --indigo: #8b9cf7; --ok: #34d399; --warn: #fbbf24;
+    --ok-bg: rgba(52,211,153,.12); --warn-bg: rgba(251,191,36,.12); --accent-bg: rgba(45,212,191,.1);
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 12px 30px -18px rgba(0,0,0,.8);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef3f9; --panel: #fff; --panel-2: #f6f9fd; --line: #dde6f0;
+    --ink: #101a28; --muted: #51637a; --faint: #8496ac; --accent: #0d9488;
+    --accent-dim: #5eead4; --indigo: #4f46e5; --ok: #059669; --warn: #b45309;
+    --ok-bg: rgba(5,150,105,.1); --warn-bg: rgba(180,83,9,.1); --accent-bg: rgba(13,148,136,.08);
+    --shadow: 0 1px 2px rgba(16,26,40,.04), 0 10px 26px -20px rgba(16,26,40,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: clamp(20px, 4vw, 56px) clamp(16px, 4vw, 32px) 72px; }
+  .mono { font-family: var(--mono); }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 14px;
+  }
+  h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.05; margin: 0 0 14px; letter-spacing: -0.02em; text-wrap: balance; font-weight: 680; }
+  h2 { font-size: 13px; font-family: var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 18px; font-weight: 600; }
+  .lede { color: var(--muted); font-size: 17px; max-width: 60ch; margin: 0; }
+  a { color: var(--accent); }
+
+  /* ---- headline metrics ---- */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 34px 0 8px; }
+  @media (max-width: 620px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 16px 14px; box-shadow: var(--shadow);
+  }
+  .metric .n { font-family: var(--mono); font-size: 28px; font-weight: 620; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .metric .n.ok { color: var(--ok); }
+  .metric .n.accent { color: var(--accent); }
+  .metric .l { font-size: 12px; color: var(--faint); margin-top: 4px; letter-spacing: .02em; }
+
+  section { margin-top: 52px; }
+
+  /* ---- architecture diagram ---- */
+  .diagram {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--line); border-radius: 16px; padding: 26px 20px;
+    box-shadow: var(--shadow); overflow-x: auto;
+  }
+  .flow { display: flex; align-items: stretch; gap: 0; min-width: 720px; }
+  .tier { display: flex; flex-direction: column; gap: 10px; justify-content: center; flex: 1; }
+  .tier-label { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); text-align: center; margin-bottom: 4px; }
+  .node {
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px;
+    background: var(--bg); text-align: center; position: relative;
+  }
+  .node .t { font-weight: 600; font-size: 14px; }
+  .node .s { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .node.edge { border-color: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent-bg); }
+  .node.stack::before, .node.stack::after {
+    content: ""; position: absolute; inset: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); z-index: -1;
+  }
+  .node.stack::before { transform: translate(5px, 5px); }
+  .node.stack::after { transform: translate(10px, 10px); opacity: .6; }
+  .arrow { display: flex; align-items: center; justify-content: center; flex: 0 0 46px; color: var(--accent); font-family: var(--mono); }
+  .arrow span { font-size: 12px; color: var(--faint); position: absolute; margin-top: -30px; }
+  .side {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; min-width: 720px;
+  }
+  .chip-svc {
+    border: 1px dashed var(--line); border-radius: 9px; padding: 9px 11px; background: var(--panel-2);
+    font-size: 12.5px; display: flex; align-items: center; gap: 8px;
+  }
+  .chip-svc .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo); flex: none; }
+  .diag-note { font-size: 12.5px; color: var(--faint); margin-top: 14px; }
+
+  /* ---- inventory ---- */
+  .layer { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; background: var(--panel); overflow: hidden; }
+  .layer-head { display: flex; align-items: baseline; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .layer-head .name { font-weight: 640; font-size: 14px; }
+  .layer-head .count { font-family: var(--mono); font-size: 12px; color: var(--faint); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .res { display: flex; flex-wrap: wrap; gap: 7px; padding: 14px 16px; }
+  .r {
+    font-family: var(--mono); font-size: 12px; padding: 4px 9px 4px 7px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--ok-bg); color: var(--ink);
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .r::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
+  .r.warn { background: var(--warn-bg); }
+  .r.warn::before { background: var(--warn); }
+
+  /* ---- scalability ---- */
+  .grid2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 12px; font-size: 15px; }
+  .card ul { margin: 0; padding-left: 0; list-style: none; }
+  .card li { position: relative; padding: 7px 0 7px 22px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); }
+  .card li:first-child { border-top: none; }
+  .card li::before { content: ""; position: absolute; left: 4px; top: 15px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .card li b { color: var(--ink); font-weight: 620; }
+  .math { font-family: var(--mono); font-size: 12.5px; }
+  .math .row { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px dashed var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .math .row:first-child { border-top: none; }
+  .math .row b { color: var(--accent); }
+  .math .tot { color: var(--ink); border-top: 1px solid var(--line); margin-top: 4px; padding-top: 12px; font-size: 14px; }
+
+  /* ---- roadmap / method ---- */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+  .rm { font-size: 14px; color: var(--muted); }
+  .rm .item { padding: 10px 0; border-top: 1px solid var(--line); }
+  .rm .item:first-child { border-top: none; }
+  .rm .k { color: var(--ink); font-weight: 620; font-family: var(--mono); font-size: 12.5px; }
+  .tag { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+  .tag.done { background: var(--ok-bg); color: var(--ok); }
+  .tag.next { background: var(--accent-bg); color: var(--accent); }
+
+  .callout { border: 1px solid var(--line); border-left: 3px solid var(--warn); background: var(--warn-bg); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; color: var(--ink); }
+  .callout b { color: var(--warn); }
+
+  /* ---- VPC architecture ---- */
+  .region { border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px 14px; background: var(--panel-2); position: relative; margin-top: 6px; }
+  .region-tag, .vpc-tag, .subnet-tag, .az-tag { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .region > .region-tag { position: absolute; top: -8px; left: 16px; background: var(--bg); padding: 0 8px; }
+  .igw { text-align: center; margin-bottom: 12px; }
+  .edge-stack { display: flex; flex-direction: column; align-items: center; gap: 0; margin-bottom: 12px; }
+  .edge-stack .aws-node { min-width: min(360px, 92%); }
+  .edge-conn { width: 2px; height: 13px; background: var(--line); }
+  .edge-conn.acc { background: var(--accent-dim); }
+  .vpc { border: 1px dashed var(--accent-dim); border-radius: 12px; padding: 28px 12px 12px; position: relative; background: var(--accent-bg); }
+  .vpc-tag { position: absolute; top: 11px; left: 14px; color: var(--accent); }
+  .alb-row { margin-bottom: 12px; }
+  .azs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .azs { grid-template-columns: 1fr; } }
+  .az { border: 1px solid var(--line); border-radius: 10px; padding: 24px 10px 10px; position: relative; background: var(--panel); }
+  .az-tag { position: absolute; top: 8px; left: 10px; }
+  .subnet { border-radius: 8px; padding: 22px 8px 8px; margin-bottom: 8px; position: relative; }
+  .subnet:last-child { margin-bottom: 0; }
+  .subnet.pub { border: 1px solid rgba(45, 212, 191, .35); background: rgba(45, 212, 191, .05); }
+  .subnet.priv { border: 1px solid rgba(139, 156, 247, .38); background: rgba(139, 156, 247, .06); }
+  .subnet-tag { position: absolute; top: 7px; left: 8px; }
+  .aws-node { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; background: var(--bg); font-size: 13px; font-weight: 620; text-align: center; }
+  .aws-node.edge { border-color: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent-bg); }
+  .aws-node .sub { font-family: var(--mono); font-weight: 400; font-size: 10.5px; color: var(--muted); display: block; margin-top: 2px; }
+  .igw .aws-node { display: inline-block; min-width: 260px; }
+  .rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+  @media (max-width: 640px) { .rail { grid-template-columns: repeat(2, 1fr); } }
+  .rail .aws-node { font-size: 12px; }
+
+  /* ---- lifecycle strip ---- */
+  .lifecycle { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .step { flex: 1; min-width: 158px; border: 1px solid var(--line); border-radius: 10px; padding: 13px; background: var(--panel); }
+  .step .num { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 600; letter-spacing: .06em; }
+  .step .st { font-weight: 640; font-size: 13.5px; margin: 4px 0 3px; }
+  .step .sd { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+  .nav { display: flex; gap: 4px; align-items: center; margin-bottom: 30px; font-family: var(--mono); font-size: 12px; }
+  .nav a { color: var(--muted); text-decoration: none; padding: 6px 11px; border-radius: 7px; border: 1px solid transparent; }
+  .nav a:hover { color: var(--ink); border-color: var(--line); }
+  .nav a.here { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-bg); }
+  .nav .sp { flex: 1; }
+  .cmd { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; margin-top: 12px; overflow-x: auto; line-height: 1.7; }
+  .cmd .c { color: var(--faint); }
+  .cmd .g { color: var(--accent); }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--faint); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  footer .mono { color: var(--muted); }
+
+  /* ---- delivery pipeline (animated sequence) ---- */
+  .shipsvg { width: 100%; max-width: 700px; height: auto; display: block; margin: 0 auto; font-family: var(--mono); }
+  .shipsvg .frame { fill: var(--panel-2); stroke: var(--line); }
+  .shipsvg .box { fill: var(--panel); stroke: var(--line); }
+  .shipsvg .top { stroke-width: 3; stroke-linecap: round; }
+  .shipsvg .top.dev { stroke: var(--faint); }
+  .shipsvg .top.gh { stroke: var(--accent); }
+  .shipsvg .top.ls { stroke: var(--indigo); }
+  .shipsvg .nm { fill: var(--ink); font-size: 12px; font-weight: 700; }
+  .shipsvg .sub { fill: var(--faint); font-size: 9px; }
+  .shipsvg .life { stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 1 5; stroke-linecap: round; }
+  .shipsvg .act { fill: var(--accent-bg); stroke: var(--accent-dim); }
+  .shipsvg .act.ls { fill: var(--panel); stroke: var(--indigo); }
+  .shipsvg .num { fill: var(--faint); font-size: 9px; font-weight: 600; }
+  .shipsvg .ln { fill: none; stroke-width: 2; stroke-linecap: round; }
+  .shipsvg .lab { font-size: 10.5px; font-weight: 600; }
+  .shipsvg .ln.ink { stroke: var(--muted); } .shipsvg .lab.ink { fill: var(--ink); }
+  .shipsvg .ln.indigo { stroke: var(--indigo); } .shipsvg .lab.indigo { fill: var(--indigo); }
+  .shipsvg .ln.acc { stroke: var(--accent); } .shipsvg .lab.acc { fill: var(--accent); }
+  .shipsvg .ln.ok { stroke: var(--ok); } .shipsvg .lab.ok { fill: var(--ok); }
+  .shipsvg .mk-ink { fill: var(--muted); } .shipsvg .mk-indigo { fill: var(--indigo); }
+  .shipsvg .mk-acc { fill: var(--accent); } .shipsvg .mk-ok { fill: var(--ok); }
+  .shipsvg .pa { opacity: .38; animation: shipglow 6s linear infinite; }
+  @keyframes shipglow { 0% { opacity: .38; } 6% { opacity: 1; } 16% { opacity: 1; } 24% { opacity: .38; } 100% { opacity: .38; } }
+  @media (prefers-reduced-motion: reduce) { .shipsvg .pa { animation: none; opacity: 1; } }
+</style>
+
+<div class="wrap">
+  <nav class="nav">
+    <a class="here" href="https://arashm0z.github.io/auth-api/">Architecture</a>
+    <a href="https://arashm0z.github.io/auth-api/api.html">API reference</a>
+    <a href="https://arashm0z.github.io/auth-api/playground.html">Playground</a>
+    <a href="https://arashm0z.github.io/auth-api/ratelimit.html">Rate limiter</a><a href="https://arashm0z.github.io/auth-api/docs/">Docs</a>
+    <span class="sp"></span>
+    <a href="https://github.com/ArashM0z/auth-api">GitHub ↗</a>
+  </nav>
+  <p class="eyebrow">Infrastructure validation · OpenTofu · applied on LocalStack (emulated AWS)</p>
+  <h1>The auth API's cloud stack, provisioned and checked end to end</h1>
+  <p class="lede">The Terraform for this service isn't just linted — it's <b style="color:var(--ink)">applied on <a href="https://localstack.cloud">LocalStack</a></b>, a local emulator that speaks the real AWS APIs. One <span class="mono">apply</span> brings up the entire resource graph: network, security, compute, data, identity, secrets, autoscaling, DNS, and the API gateway. Zero AWS spend, no live account — and the same apply runs in <a href="https://github.com/ArashM0z/auth-api/actions/workflows/localstack.yml">GitHub Actions</a>.</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="n ok">56</div><div class="l">resources provisioned</div></div>
+    <div class="metric"><div class="n accent">8</div><div class="l">infra layers up</div></div>
+    <div class="metric"><div class="n">$0.00</div><div class="l">cost to validate</div></div>
+    <div class="metric"><div class="n ok">0</div><div class="l">apply errors</div></div>
+  </div>
+
+  <section>
+    <h2>Deployed architecture</h2>
+    <div class="diagram">
+      <div class="flow">
+        <div class="tier">
+          <div class="tier-label">DNS</div>
+          <div class="node edge"><div class="t">Route 53</div><div class="s">health-check failover</div></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="tier">
+          <div class="tier-label">Edge</div>
+          <div class="node edge"><div class="t">WAF + ALB</div><div class="s">:443 · /readyz</div></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="tier">
+          <div class="tier-label">Compute · autoscaled</div>
+          <div class="node stack"><div class="t">ECS Fargate</div><div class="s">task · :3000</div></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="tier">
+          <div class="tier-label">Data · private</div>
+          <div class="node"><div class="t">ElastiCache</div><div class="s">Redis · TLS+AUTH</div></div>
+        </div>
+      </div>
+      <div class="side">
+        <div class="chip-svc"><span class="dot"></span> API Gateway — throttle + keys (opt.)</div>
+        <div class="chip-svc"><span class="dot"></span> CloudFront — edge cache (opt.)</div>
+        <div class="chip-svc"><span class="dot"></span> ECR — scanned images</div>
+        <div class="chip-svc"><span class="dot"></span> Secrets Manager — Redis creds</div>
+        <div class="chip-svc"><span class="dot"></span> SSM — non-secret config</div>
+        <div class="chip-svc"><span class="dot"></span> CloudWatch — logs + insights</div>
+      </div>
+      <p class="diag-note"><b style="color:var(--ink)">Route 53</b> resolves the name (and does health-checked failover for multi-region); an optional <b style="color:var(--ink)">API Gateway</b> HTTP API can front the ALB for throttling and per-consumer keys. Inside, traffic is admitted tier-to-tier by security-group reference only: edge → <span class="mono">alb</span> (:443) → <span class="mono">app</span> (:3000) → <span class="mono">redis</span> (:6379). The app tier is stateless; all state lives in Redis.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The whole architecture — VPC layout</h2>
+    <div class="diagram">
+      <div class="region">
+        <span class="region-tag">AWS · ca-central-1</span>
+        <div class="edge-stack">
+          <div class="aws-node edge">Route 53 · DNS<span class="sub">health-checked failover routing</span></div>
+          <div class="edge-conn acc"></div>
+          <div class="aws-node edge">AWS WAF  +  API Gateway <span class="sub">optional · managed rules · throttling · per-consumer keys</span></div>
+          <div class="edge-conn"></div>
+          <div class="aws-node">Internet Gateway<span class="sub">public ingress / egress</span></div>
+        </div>
+        <div class="vpc">
+          <span class="vpc-tag">VPC · 10.0.0.0/16</span>
+          <div class="alb-row">
+            <div class="aws-node edge">Application Load Balancer<span class="sub">public · spans both AZs · health-checks /readyz</span></div>
+          </div>
+          <div class="azs">
+            <div class="az">
+              <span class="az-tag">AZ · ca-central-1a</span>
+              <div class="subnet pub"><span class="subnet-tag">public subnet · 10.0.0.0/24</span>
+                <div class="aws-node">ECS Fargate task<span class="sub">:3000 · sg&nbsp;app</span></div>
+              </div>
+              <div class="subnet priv"><span class="subnet-tag">private subnet · 10.0.10.0/24</span>
+                <div class="aws-node">ElastiCache · primary<span class="sub">Redis · read/write · TLS+AUTH</span></div>
+              </div>
+            </div>
+            <div class="az">
+              <span class="az-tag">AZ · ca-central-1b</span>
+              <div class="subnet pub"><span class="subnet-tag">public subnet · 10.0.1.0/24</span>
+                <div class="aws-node">ECS Fargate task<span class="sub">:3000 · sg&nbsp;app</span></div>
+              </div>
+              <div class="subnet priv"><span class="subnet-tag">private subnet · 10.0.11.0/24</span>
+                <div class="aws-node">ElastiCache · replica<span class="sub">read-only copy · promotes on failover</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="rail">
+          <div class="aws-node">ECR<span class="sub">scanned images</span></div>
+          <div class="aws-node">Secrets Manager<span class="sub">redis creds</span></div>
+          <div class="aws-node">SSM<span class="sub">config</span></div>
+          <div class="aws-node">CloudWatch<span class="sub">logs + insights</span></div>
+          <div class="aws-node">IAM<span class="sub">task roles</span></div>
+        </div>
+      </div>
+      <p class="diag-note">Fargate runs in <b style="color:var(--ink)">public</b> subnets, locked to the ALB's security group, to skip ~$65/mo of NAT gateway. Redis sits in <b style="color:var(--ink)">private</b> subnets, reachable only from the app tier. The bottom rail is regional AWS services, reached over the AWS network with scoped IAM — the task execution role can read exactly its two secrets and four SSM params, nothing else.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>How a login request flows</h2>
+    <div class="diagram">
+      <div class="lifecycle">
+        <div class="step"><div class="num">01 · edge</div><div class="st">ALB → task</div><div class="sd">Routed to a healthy Fargate task. <span class="mono">/readyz</span> gates on Redis, so a task that lost its cache is drained.</div></div>
+        <div class="step"><div class="num">02 · gate</div><div class="st">Rate-limit check</div><div class="sd">Atomic Redis <span class="mono">INCR</span> per username <em>before</em> any hashing — a concurrent burst can't slip past the cap.</div></div>
+        <div class="step"><div class="num">03 · verify</div><div class="st">Argon2id</div><div class="sd">Verify against the stored hash — or a dummy one for unknown users, at identical cost. No timing tell.</div></div>
+        <div class="step"><div class="num">04 · respond</div><div class="st">Audit &amp; reply</div><div class="sd">Structured audit event, then <span class="mono">200</span> or a byte-identical <span class="mono">401</span>. Never reveals which half failed.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How it ships — the delivery pipeline</h2>
+    <div class="diagram">
+      <div style="overflow-x:auto">
+        <svg class="shipsvg" viewBox="0 0 700 478" role="img" aria-label="Delivery pipeline: push, CI checks, image build, LocalStack apply, assert, green">
+          <defs>
+            <marker id="s-ink" markerWidth="7.5" markerHeight="7.5" refX="6" refY="3" orient="auto"><path class="mk-ink" d="M0,0 L7,3 L0,6 Z"></path></marker>
+            <marker id="s-indigo" markerWidth="7.5" markerHeight="7.5" refX="6" refY="3" orient="auto"><path class="mk-indigo" d="M0,0 L7,3 L0,6 Z"></path></marker>
+            <marker id="s-acc" markerWidth="7.5" markerHeight="7.5" refX="6" refY="3" orient="auto"><path class="mk-acc" d="M0,0 L7,3 L0,6 Z"></path></marker>
+            <marker id="s-ok" markerWidth="7.5" markerHeight="7.5" refX="6" refY="3" orient="auto"><path class="mk-ok" d="M0,0 L7,3 L0,6 Z"></path></marker>
+          </defs>
+          <rect class="frame" x="6" y="6" width="688" height="466" rx="13"></rect>
+          <rect class="act" x="355" y="103" width="10" height="326" rx="3"></rect>
+          <rect class="act ls" x="600" y="279" width="10" height="62" rx="3"></rect>
+          <line class="life" x1="115" y1="74" x2="115" y2="464"></line>
+          <line class="life" x1="360" y1="74" x2="360" y2="464"></line>
+          <line class="life" x1="605" y1="74" x2="605" y2="464"></line>
+          <rect class="box" x="55" y="18" width="120" height="48" rx="10"></rect>
+          <line class="top dev" x1="71" y1="18" x2="159" y2="18"></line>
+          <text class="nm" x="115" y="40" text-anchor="middle">Developer</text>
+          <text class="sub" x="115" y="54" text-anchor="middle">git · pull request</text>
+          <rect class="box" x="300" y="18" width="120" height="48" rx="10"></rect>
+          <line class="top gh" x1="316" y1="18" x2="404" y2="18"></line>
+          <text class="nm" x="360" y="40" text-anchor="middle">GitHub Actions</text>
+          <text class="sub" x="360" y="54" text-anchor="middle">CI runner</text>
+          <rect class="box" x="545" y="18" width="120" height="48" rx="10"></rect>
+          <line class="top ls" x1="561" y1="18" x2="649" y2="18"></line>
+          <text class="nm" x="605" y="40" text-anchor="middle">LocalStack</text>
+          <text class="sub" x="605" y="54" text-anchor="middle">emulated AWS</text>
+          <g class="pa" style="animation-delay:0s">
+            <text class="num" x="26" y="115" text-anchor="middle">1</text>
+            <line class="ln ink" x1="115" y1="112" x2="355" y2="112" marker-end="url(#s-ink)"></line>
+            <text class="lab ink" x="235" y="105" text-anchor="middle">git push · open PR</text>
+          </g>
+          <g class="pa" style="animation-delay:.75s">
+            <text class="num" x="26" y="159" text-anchor="middle">2</text>
+            <path class="ln indigo" d="M365,151 h34 v11 h-30" marker-end="url(#s-indigo)"></path>
+            <text class="lab indigo" x="411" y="159" text-anchor="start">lint · typecheck · API contract</text>
+          </g>
+          <g class="pa" style="animation-delay:1.5s">
+            <text class="num" x="26" y="203" text-anchor="middle">3</text>
+            <path class="ln indigo" d="M365,195 h34 v11 h-30" marker-end="url(#s-indigo)"></path>
+            <text class="lab indigo" x="411" y="203" text-anchor="start">79 tests vs real Redis · mutation · CodeQL</text>
+          </g>
+          <g class="pa" style="animation-delay:2.25s">
+            <text class="num" x="26" y="247" text-anchor="middle">4</text>
+            <path class="ln indigo" d="M365,239 h34 v11 h-30" marker-end="url(#s-indigo)"></path>
+            <text class="lab indigo" x="411" y="247" text-anchor="start">docker build · runs as non-root</text>
+          </g>
+          <g class="pa" style="animation-delay:3s">
+            <text class="num" x="26" y="291" text-anchor="middle">5</text>
+            <line class="ln acc" x1="365" y1="288" x2="600" y2="288" marker-end="url(#s-acc)"></line>
+            <text class="lab acc" x="482" y="281" text-anchor="middle">tflocal apply → boot AWS</text>
+          </g>
+          <g class="pa" style="animation-delay:3.75s">
+            <text class="num" x="26" y="335" text-anchor="middle">6</text>
+            <line class="ln acc" x1="600" y1="332" x2="365" y2="332" marker-end="url(#s-acc)"></line>
+            <text class="lab acc" x="482" y="325" text-anchor="middle">56 resources up · 0 errors</text>
+          </g>
+          <g class="pa" style="animation-delay:4.5s">
+            <text class="num" x="26" y="379" text-anchor="middle">7</text>
+            <path class="ln indigo" d="M365,371 h34 v11 h-30" marker-end="url(#s-indigo)"></path>
+            <text class="lab indigo" x="411" y="379" text-anchor="start">assert VPC · ECS · Redis · Route 53 · API GW</text>
+          </g>
+          <g class="pa" style="animation-delay:5.25s">
+            <text class="num" x="26" y="423" text-anchor="middle">8</text>
+            <line class="ln ok" x1="355" y1="420" x2="115" y2="420" marker-end="url(#s-ok)"></line>
+            <text class="lab ok" x="235" y="413" text-anchor="middle">✓ all checks green</text>
+          </g>
+        </svg>
+      </div>
+      <p class="diag-note">The checks gate every pull request; the <a href="https://github.com/ArashM0z/auth-api/actions/workflows/localstack.yml">LocalStack apply</a> boots the emulated AWS inside the runner and asserts all <b style="color:var(--ink)">56 resources</b> — the same <span class="mono">tflocal apply</span> shown below, replayed on demand in CI. No AWS account, no cost.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What came up in the apply</h2>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Network</span><span class="count">12 · all up</span></div>
+      <div class="res">
+        <span class="r">aws_vpc.main</span><span class="r">subnet.public[0]</span><span class="r">subnet.public[1]</span>
+        <span class="r">subnet.private[0]</span><span class="r">subnet.private[1]</span><span class="r">internet_gateway.main</span>
+        <span class="r">route_table.public</span><span class="r">route_table.private</span><span class="r">route.public_internet</span>
+        <span class="r">rt_assoc ×4</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Security groups</span><span class="count">9 · all up</span></div>
+      <div class="res">
+        <span class="r">sg.alb</span><span class="r">sg.app</span><span class="r">sg.redis</span><span class="r">default_sg (locked)</span>
+        <span class="r">ingress.alb_http</span><span class="r">ingress.app_from_alb</span><span class="r">ingress.redis_from_app</span>
+        <span class="r">egress.alb_to_app</span><span class="r">egress.app_all</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Compute &amp; load balancing</span><span class="count">6 · all up</span></div>
+      <div class="res">
+        <span class="r">ecs_cluster.main</span><span class="r">ecs_task_definition.app</span><span class="r">ecs_service.app</span>
+        <span class="r">lb.app</span><span class="r">lb_listener.http</span><span class="r">lb_target_group.app</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Data · Redis</span><span class="count">2 · all up</span></div>
+      <div class="res">
+        <span class="r">elasticache_replication_group.redis</span><span class="r">elasticache_subnet_group.redis</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Identity, secrets &amp; config</span><span class="count">12 · all up</span></div>
+      <div class="res">
+        <span class="r">iam_role.task</span><span class="r">iam_role.task_execution</span><span class="r">iam_role_policy.exec_secrets</span>
+        <span class="r">secret.redis_auth_token</span><span class="r">secret.redis_url</span><span class="r">secret_version ×2</span>
+        <span class="r">random_password.redis_auth</span>
+        <span class="r">ssm.log_level</span><span class="r">ssm.trust_proxy</span><span class="r">ssm.password_min_length</span><span class="r">ssm.redis_port</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Registry &amp; observability</span><span class="count">3 · all up</span></div>
+      <div class="res">
+        <span class="r">ecr_repository.app</span><span class="r">ecr_lifecycle_policy.app</span><span class="r">cloudwatch_log_group.app</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Autoscaling</span><span class="count">2 · up</span></div>
+      <div class="res">
+        <span class="r">appautoscaling_target.ecs</span><span class="r">appautoscaling_policy.cpu</span>
+      </div>
+    </div>
+
+    <div class="layer">
+      <div class="layer-head"><span class="name">Edge · DNS &amp; API Gateway</span><span class="count">7 · all up</span></div>
+      <div class="res">
+        <span class="r">route53_zone.internal</span><span class="r">route53_record.api</span>
+        <span class="r">apigatewayv2_api.http</span><span class="r">apigatewayv2_vpc_link.alb</span><span class="r">apigatewayv2_integration.alb</span><span class="r">apigatewayv2_route.proxy</span><span class="r">apigatewayv2_stage.default</span>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:14px;border-left-color:var(--accent);background:var(--accent-bg)">
+      <b style="color:var(--accent)">Applied, not just linted.</b> LocalStack (Pro trial) applies the full <b style="color:var(--ink)">56 resources — VPC, ECS, ElastiCache, ALB, Route&nbsp;53, and API&nbsp;Gateway included — with zero errors</b>, locally and again in <a href="https://github.com/ArashM0z/auth-api/actions/workflows/localstack.yml">GitHub Actions</a>. The free <span class="mono">Moto</span> mock is a lighter fallback (it skips Application Auto Scaling). Either way it's $0 and no live AWS account; and the committed <span class="mono">tofu&nbsp;test</span> + <span class="mono">tflint</span> + <span class="mono">checkov</span> gate every resource regardless.
+    </div>
+  </section>
+
+  <section>
+    <h2>How it scales</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Design for horizontal scale</h3>
+        <ul>
+          <li><b>Stateless app tier.</b> Users and rate-limit windows live in Redis, so Fargate tasks hold no session state — add tasks, no coordination.</li>
+          <li><b>Autoscaling on CPU.</b> Target-tracking at 60% CPU, min 1 (dev) → up to 20 tasks (prod), behind the ALB.</li>
+          <li><b>Limits that survive scale-out.</b> Rate limiting is Redis-backed, so the cap holds across every replica — an in-memory limiter would multiply by task count.</li>
+          <li><b>Fails predictably.</b> Load shedding (503 + Retry-After) and readiness draining keep a saturated instance from taking traffic.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Measured capacity budget</h3>
+        <p style="margin:0 0 12px;font-size:13px;color:var(--muted)">The login ceiling is the security cost working — Argon2id is deliberately expensive. From the benchmark:</p>
+        <div class="math">
+          <div class="row"><span>Argon2id verify</span><b>~37 ms</b></div>
+          <div class="row"><span>hash concurrency / task</span><b>8</b></div>
+          <div class="row"><span>logins/sec / task</span><b>≈ 216</b></div>
+          <div class="row"><span>measured</span><b>208</b></div>
+          <div class="row tot"><span>10 tasks →</span><b>~2,000 logins/sec</b></div>
+        </div>
+        <p style="margin:12px 0 0;font-size:12.5px;color:var(--faint)">Health checks hit ~25,000 req/s/task — the framework isn't the bottleneck, the hash is, by design.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Production hardening &amp; scale-out</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Security — past the demo</h3>
+        <ul>
+          <li><b>Private subnets + VPC endpoints.</b> The demo puts Fargate in <em>public</em> subnets (locked to the ALB's SG, no inbound from the internet) only to skip ~$65/mo of NAT. Production moves tasks to <b>private</b> subnets and reaches ECR / S3 / Secrets / CloudWatch over VPC endpoints — no public IPs at all.</li>
+          <li><b>AWS WAF</b> on the edge: managed OWASP / bad-bot / IP-reputation rules and a coarse rate rule, in front of the app's own per-account limiter.</li>
+          <li><b>API Gateway (HTTP API)</b> as the front door: throttling, usage plans, per-consumer keys, one audited entry point — VPC Link → ALB.</li>
+          <li><b>Security logging.</b> CloudTrail (API audit), GuardDuty (threat detection), VPC Flow Logs, plus the app's structured audit trail shipped to a SIEM.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Scale — where the headroom is</h3>
+        <ul>
+          <li><b>Redis: primary + replicas.</b> ElastiCache runs a read/write <em>primary</em> with <em>replicas</em> in other AZs that promote on failover; read replicas absorb read load, Cluster Mode shards past one node.</li>
+          <li><b>Caching.</b> CloudFront in front of the ALB for cacheable reads; a read-through cache layer for hot lookups. The auth paths stay uncached by design (write-heavy, security-sensitive).</li>
+          <li><b>Stateless tasks + CPU autoscaling</b> behind the ALB — the app tier grows horizontally with zero coordination.</li>
+          <li><b>Multi-region</b> active-passive: Route 53 health-check failover + ElastiCache Global Datastore when one region's availability isn't enough.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="diag-note">All of this is deliberately out of scope for a two-endpoint take-home — <b style="color:var(--ink)">written down, not silently skipped</b>. The point is knowing the next three moves, not building them prematurely.</p>
+  </section>
+
+  <section>
+    <h2>Method &amp; what's next</h2>
+    <div class="split">
+      <div>
+        <div class="card">
+          <h3>Simulated on LocalStack</h3>
+          <p class="rm" style="margin:0">
+            <a href="https://localstack.cloud">LocalStack</a> is a local emulator that speaks the real AWS
+            APIs from one Docker container. <span class="mono">tflocal</span> — a thin OpenTofu wrapper — points
+            every provider call at it, so <span class="mono">apply</span> genuinely creates the stack
+            (VPC, ECS, ElastiCache, Route&nbsp;53, API&nbsp;Gateway) in real dependency order, into real state.
+            I use it to <b style="color:var(--ink)">simulate the whole AWS deploy</b> at $0, with no account:
+          </p>
+          <div class="cmd">
+<span class="c"># a local AWS in one container, then apply for real</span>
+localstack start -d
+<span class="g">tflocal apply</span> -var-file=environments/dev.tfvars
+<span class="c"># → Apply complete! Resources: 56 added, 0 changed, 0 destroyed.</span>
+          </div>
+          <p class="rm" style="margin:10px 0 0;font-size:13px">It also runs in
+            <a href="https://github.com/ArashM0z/auth-api/actions/workflows/localstack.yml">GitHub Actions</a>:
+            LocalStack boots in the runner, the stack applies, and the key resources are asserted live. The same
+            config also passes <span class="mono">tofu&nbsp;test</span> (plan-time security assertions),
+            <span class="mono">tflint</span>, and <span class="mono">checkov</span>.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Delivery pipeline &amp; roadmap</h3>
+          <div class="rm">
+            <div class="item"><span class="k">GitHub Actions CI</span><span class="tag done">live</span><br />lint · type · 79 tests vs real Redis · mutation testing · audit · CodeQL · image build</div>
+            <div class="item"><span class="k">AWS CodePipeline → CodeBuild</span><span class="tag next">designed</span><br />native path: source → build/test in CodeBuild → push ECR → rolling ECS deploy</div>
+            <div class="item"><span class="k">API Gateway (HTTP API) fronting the ALB</span><span class="tag next">optional</span><br />adds throttling, WAF, usage plans, and per-consumer keys for an internal service mesh</div>
+            <div class="item"><span class="k">ECS Fargate — deliberate, not default</span><span class="tag done">built</span><br />chosen for full control of the VPC, subnets, security-group chain, and Redis placement — the parts worth showing in an infra review. It's a plain Docker image with a health check, so the target is portable: EKS if Kubernetes is the org standard, App Runner or a PaaS (Fly / Render) if the goal is minimal ops over infra control, or beside Amplify when there's a full-stack front-end</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="mono">ArashM0z/auth-api</span>
+    <span>·</span>
+    <span>OpenTofu 1.12 · aws provider v6</span>
+    <span>·</span>
+    <span>region <span class="mono">ca-central-1</span></span>
+    <span>·</span>
+    <span>applied on LocalStack (emulated AWS) · local + CI · no live account</span>
+  </footer>
+</div>

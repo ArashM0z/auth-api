@@ -1,0 +1,91 @@
+site_name: Authentication API — Architecture
+site_description: arc42 architecture documentation for the Lendesk auth-API take-home — design rationale, diagrams, security, and compliance.
+site_author: Arash Mozhdehi
+site_url: https://arashm0z.github.io/auth-api/docs/
+repo_url: https://github.com/ArashM0z/auth-api
+repo_name: ArashM0z/auth-api
+edit_uri: edit/main/docs/
+copyright: Documentation for an internal authentication API — MIT licensed.
+
+theme:
+  name: material
+  icon:
+    logo: material/shield-key
+    repo: fontawesome/brands/github
+  palette:
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Live tools:
+      - Landing tour: https://arashm0z.github.io/auth-api/
+      - API reference: https://arashm0z.github.io/auth-api/api.html
+      - Playground: https://arashm0z.github.io/auth-api/playground.html
+      - Rate-limiter demo: https://arashm0z.github.io/auth-api/ratelimit.html
+  - Design rationale: design-rationale.md
+  - Architecture (arc42): architecture.md
+  - Diagrams: diagrams.md
+  - Security model: security.md
+  - Compliance & AI governance: COMPLIANCE.md
+  - Configuration: CONFIGURATION.md
+  - AI workflow: AI_WORKFLOW.md
+  - Decisions (ADRs):
+      - Overview: adr/index.md
+      - 0001 · Fastify over Express: adr/0001-fastify-over-express.md
+      - 0002 · Argon2id over bcrypt: adr/0002-argon2id-over-bcrypt.md
+      - 0003 · Atomic uniqueness (SET NX): adr/0003-atomic-uniqueness-set-nx.md
+      - 0004 · 201 Created deviation: adr/0004-201-created-deviation.md
+      - 0005 · No sessions or JWT: adr/0005-no-sessions-or-jwt.md
+      - 0006 · RFC 9457 problem details: adr/0006-rfc9457-problem-details.md
+      - 0007 · NIST password policy: adr/0007-nist-password-policy.md
+      - 0008 · Custom Redis rate limiter: adr/0008-custom-redis-rate-limiter.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ArashM0z/auth-api

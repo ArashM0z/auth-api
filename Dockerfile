@@ -26,6 +26,11 @@ RUN npm run build
 
 # ---- production image: compiled JS + prod deps, non-root, healthchecked ---
 FROM base AS prod
+# The runtime is `node dist/server.js` — no package manager needed. Strip
+# npm and corepack from the final image: smaller, less attack surface (a
+# compromised container can't install tooling), and it removes npm's own
+# vendored dependencies from the scan surface (Trivy flagged one).
+RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn*
 # 'node' is the unprivileged uid-1000 user shipped in the official image.
 USER node
 COPY --chown=node:node --from=deps /app/node_modules ./node_modules

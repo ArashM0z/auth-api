@@ -1,17 +1,19 @@
 name: CI
 
+# Run the full suite on every push (any branch) and every PR, plus on
+# demand — fast feedback wherever you work, not only on main.
 on:
   push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# Cancel superseded runs on a PR branch; never cancel a run on main.
+# Cancel superseded runs on branches/PRs; never cancel a run on main.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   quality:
