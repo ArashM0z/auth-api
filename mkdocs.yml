@@ -45,6 +45,7 @@ nav:
       - API reference: https://arashm0z.github.io/auth-api/api.html
       - Playground: https://arashm0z.github.io/auth-api/playground.html
       - Rate-limiter demo: https://arashm0z.github.io/auth-api/ratelimit.html
+      - Visual guide (13 diagrams): https://arashm0z.github.io/auth-api/visual-guide.html
   - Design rationale: design-rationale.md
   - Architecture (arc42): architecture.md
   - Diagrams: diagrams.md

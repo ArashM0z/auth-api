@@ -24,6 +24,7 @@ export default function Nav({ current }: { current: NavCurrent }) {
       <a className={here('ratelimit')} href="ratelimit.html">
         Rate limiter
       </a>
+      <a href="visual-guide.html">Visual guide</a>
       <a href="https://arashm0z.github.io/auth-api/docs/">Docs</a>
       <span className="sp"></span>
       <a href="https://github.com/ArashM0z/auth-api">GitHub &#8599;</a>
