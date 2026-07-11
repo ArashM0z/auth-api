@@ -25,13 +25,13 @@ flowchart LR
         S2[Back-office jobs]
     end
     subgraph system [Authentication API]
-        A[Fastify 5 app\nstateless, N replicas]
+        A[Fastify 5 app<br/>stateless, N replicas]
     end
-    R[(Redis 8\nusers + rate windows\nAOF everysec)]
-    O[Log pipeline\naudit events]
-    P[Orchestrator / LB\nhealthz + readyz]
+    R[(Redis 8<br/>users + rate windows<br/>AOF everysec)]
+    O[Log pipeline<br/>audit events]
+    P[Orchestrator / LB<br/>healthz + readyz]
 
-    S1 -->|POST /v1/users\nPOST /v1/auth/login| A
+    S1 -->|POST /v1/users<br/>POST /v1/auth/login| A
     S2 --> A
     A --> R
     A -.structured JSON logs.-> O
@@ -59,14 +59,14 @@ One source of truth per concern:
 
 ```mermaid
 flowchart TD
-    server[server.ts\nboot + graceful shutdown] --> app[app.ts\nwiring, hooks, error surface]
-    app --> routes[routes/\nusers · auth · health]
-    routes --> domain[domain/\nusername · password-policy · password-hasher]
-    routes --> svc[services/user-service.ts\ncreate · verifyCredentials]
-    app --> plugins[plugins/\nredis client · rate limiter]
+    server[server.ts<br/>boot + graceful shutdown] --> app[app.ts<br/>wiring, hooks, error surface]
+    app --> routes[routes/<br/>users · auth · health]
+    routes --> domain[domain/<br/>username · password-policy · password-hasher]
+    routes --> svc[services/user-service.ts<br/>create · verifyCredentials]
+    app --> plugins[plugins/<br/>redis client · rate limiter]
     svc --> plugins
-    app --> problems[problems.ts\nRFC 9457 registry]
-    routes --> audit[audit.ts\nsecurity events]
+    app --> problems[problems.ts<br/>RFC 9457 registry]
+    routes --> audit[audit.ts<br/>security events]
 ```
 
 Layering rule: routes translate HTTP ↔ domain; domain knows nothing about

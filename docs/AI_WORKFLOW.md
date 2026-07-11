@@ -1,101 +1,115 @@
 # AI Workflow
 
-Honest disclosure, since this team cares about _how and why_ AI is used, not
-just whether it is.
+Honest disclosure of how AI was used on this project — because for this kind of
+work, *how and why* matters more than *whether*. The short version: I hold the
+**intent and the judgment**; AI supplies the **breadth and the typing**. The
+result is code I can defend line by line, which is the only reason it's worth
+submitting.
 
-**How the work split on this project:** the major ideas, architectural
-direction, and decisions are mine. That means keeping scope tight (no JWT),
-treating username uniqueness as an atomicity problem, equalizing login
-timing, leading with OpenTofu, holding the design to current standards, and
-running an adversarial review and _acting_ on it. The **AI did the
-implementation and collaborated on the details**: it wrote the code, the
-tests, and the first drafts of the docs against my direction, verified stack
-facts against primary sources, and ran the review. I supervised throughout,
-redirected it when it went the wrong way, and made significant changes along
-the way. The result is code I can stand behind and explain line by line,
-which is the only reason it's worth submitting.
+## The division of labor
 
-This is how I actually work. I use AI as a fast, tireless pair: I hold the
-intent and the judgment, it handles the typing and the breadth.
+The decisions that shaped this service are mine: scope discipline (no JWT),
+treating username uniqueness as an *atomicity* problem, making login
+*timing-safe*, holding every choice to a **cited standard** rather than folklore,
+and running an adversarial review and *acting* on it. AI wrote code, tests, and
+first-draft docs against that direction, verified facts against primary sources,
+and ran the review. I supervised throughout, redirected it when it drifted, and
+made the calls that mattered.
 
-## Principles I directed the work by
+This is how I actually work — AI as a fast, tireless pair, never a substitute for
+judgment.
 
-1. **Verify before trusting.** Every stack and standards choice was checked
-   against primary sources (npm registry, IETF datatracker, NIST, OWASP
-   docs) _before_ implementation. AI is good at confident staleness, so I
-   made the workflow force citations. This caught real traps: a package
-   version that didn't exist, an IETF draft (Idempotency-Key) that had
-   expired, and the TypeBox package rename that would have cost an hour of
-   debugging.
-2. **The standard disposes.** Where a standard exists (RFC 9457 errors,
-   NIST 800-63B-4 password rules, OWASP Argon2id parameters, RFC 9110 status
-   semantics), the design follows it and cites it instead of folklore.
-3. **Adversarial by default.** Before submission I had independent review
-   passes, each with a different lens (security, spec compliance, test
-   adequacy, operability), attack the code. It surfaced a real HIGH-severity
-   brute-force race (a TOCTOU in the login limiter); I directed the fix
-   (atomic increment-then-check) and a regression test that would have
-   caught it. Acting on review is the point, not running it.
-4. **I own the judgment calls.** Scope discipline, the 201 deviation, the
-   timing-equalization design, the hash-concurrency cap, the ECS-over-EKS
-   decision — mine, and defensible, because accepting a suggestion I can't
-   defend is how bad code ships.
+## Context & prompt engineering — the techniques that made it reliable
 
-## Phases
+An LLM's default failure mode is *confident wrongness*. The workflow was
+engineered to convert that liability into leverage. Each pattern below is
+reusable — it's exactly how I'd build a production AI feature responsibly.
 
-| Phase              | What ran                                                                                                                                                                                | Outcome                                                                                                    |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Research           | Six parallel research passes (framework, Redis ecosystem, password standards, prior public solutions to similar briefs, HTTP API standards, 2026 toolchain), all citing primary sources | Version-verified stack; NIST rev-4 15-char rule; expired-draft avoided; "what would stand out" calibration |
-| Design             | Contract-first: endpoints, problem registry, key layout, threat model — debated before code                                                                                             | The ADRs in `docs/adr/` are the distillate                                                                 |
-| Implement          | Schema-first code with a tight verify loop (typecheck → lint → test after every change); strictest TS settings kept honest                                                              | 79 tests, ~96% coverage grew _with_ the code, not after                                                    |
-| Verify             | Real-Redis integration tests (Testcontainers), property-based fuzzing (fast-check), benchmark with capacity math, empirical timing measurement of the enumeration defense               | Numbers in the README are measured, not asserted                                                           |
-| Adversarial review | Multi-agent review: each finding independently verified before being accepted, then fixed + regression-tested                                                                           | Findings log summarized below the prompts                                                                  |
+### 1. Verification-forced prompting (anti-hallucination)
 
-## Example prompts (verbatim)
+Every stack and standards claim had to be verified against a **primary source**
+before it entered the design. The load-bearing part is the permission-to-fail
+clause:
 
-Research (one of six):
+> *"Report only what you can verify on the web, with URLs. Prefer primary sources
+> — npm, IETF Datatracker, NIST, OWASP. If a claim cannot be verified, say so
+> explicitly rather than guessing."*
 
-> Question: What is the state-of-the-art for password storage and password
-> policy as of 2026? Verify: OWASP Password Storage Cheat Sheet current
-> recommended algorithm and exact argon2id parameters; NIST SP 800-63B
-> revision 4 status (was it finalized? when?) and what it says about
-> password rules — minimum length, composition rules, blocklists, maximum
-> length; best npm package for argon2 in 2026 including maintenance status
-> and prebuilt-binary story. Prefer primary sources. Report only what you
-> verified on the web, with URLs. If a claim cannot be verified, say so
-> rather than guessing.
+Giving the model an explicit exit ("say so rather than guess") is what stops it
+inventing confidence. This caught real traps: a package version that didn't
+exist, an IETF draft (`Idempotency-Key`) that had **expired**, and a package
+rename that would otherwise have burned an hour of debugging.
 
-Adversarial review (the shape of each reviewer):
+### 2. Refute-by-default adversarial review
 
-> You are reviewing an authentication API before submission. Your lens:
-> {security | spec-compliance | test-adequacy | operations}. Actively try
-> to BREAK it: find concrete failure scenarios (inputs/state → wrong
-> behavior), not style notes. For each finding, state the file/line, the
-> scenario, and how you verified it is real (read the code, run the test,
-> craft the request). Default to "refuted" if you cannot demonstrate it.
+Before submission, independent passes attacked the code. The prompt inverts the
+model's natural agreeableness:
 
-The refute-by-default clause matters: it filters plausible-but-wrong
-findings, which are the main failure mode of AI review.
+> *"Actively try to BREAK this. Find concrete failure scenarios — specific
+> inputs/state that produce wrong behaviour — not style notes. For each finding,
+> give the file/line, the scenario, and how you verified it is real. **Default to
+> 'refuted' unless you can demonstrate the failure.**"*
 
-## What the workflow caught (sample)
+Refute-by-default filters plausible-but-wrong findings, which are the dominant
+failure mode of AI review. This pass surfaced a real **HIGH-severity brute-force
+race** — a TOCTOU in the login limiter. I directed the fix (atomic
+increment-then-check) and a regression test that would have caught it.
 
-- Fastify's built-in `text/plain` parser turning a should-be-415 into a 400
-  (found by an integration test written before the fix).
-- Fastify's AJV defaults _silently stripping_ unknown body fields —
-  inverted to strict rejection (`removeAdditional: false`).
-- A rate-limiter off-by-one between `hit` and `peek` semantics.
-- The benchmark being throttled by our own IP rate limiter — resolved with
-  an env override and a warning in the bench output (the limiter working
-  was the correct behavior).
-- **A mutation-testing probe removed the dummy-hash verification** (the
-  timing-attack defense) to check whether the suite would notice. The
-  security timing test, which asserts both login paths spend a full
-  Argon2id verification, catches this, confirming the defense has a
-  real executable regression guard rather than just a comment. (The probe
-  was reverted; the guard stays.)
+### 3. Lens diversity over redundancy
 
-## Cost of the approach
+Rather than run one reviewer five times, each pass got a **distinct lens** —
+security, spec-compliance, test-adequacy, operability. Diversity catches failure
+modes redundancy can't: the security lens found the race; the test lens found
+assertions that executed code without checking behaviour; the ops lens noticed
+the benchmark was being throttled by our own rate limiter (the limiter working
+correctly — resolved with an env override and a note in the output).
 
-More upfront time on research and review than "just start typing", repaid
-by the absence of a rewrite: the contract, threat model, and key layout
-survived from first design to submission unchanged.
+### 4. Context engineering — ground first, then constrain
+
+Each agent was handed exactly what it needed and no more: the specific files, the
+standard to cite, and the project's **quality-priority ordering** (security >
+correctness > operability > throughput > features) as the explicit tie-breaker.
+Grounding in primary sources plus a tight, stated scope is what keeps a model
+on-task instead of drifting into generic advice.
+
+### 5. Schema-constrained generation
+
+Where one step's output fed the next, it was constrained to a **schema** so it
+could be validated mechanically instead of parsed hopefully — the same discipline
+the API itself applies with TypeBox response schemas. Structured output turns
+"trust the model" into "verify the shape."
+
+### 6. The tight verify loop
+
+Every change ran **typecheck → lint → test** before the next. Coverage grew
+*with* the code, not after; the strictest TypeScript settings stayed on
+throughout, so the compiler acted as a continuous reviewer. Numbers in the README
+(latency, timing medians) are *measured*, not asserted.
+
+## Evidence the workflow was real
+
+- Fastify's built-in `text/plain` parser turning a should-be-**415** into a
+  **400** — caught by an integration test written *before* the fix.
+- Fastify's AJV defaults silently *stripping* unknown body fields — inverted to
+  strict rejection (`removeAdditional: false`).
+- A rate-limiter **TOCTOU race** under concurrency — fixed with an atomic gate and
+  a concurrency regression test.
+- A **mutation probe deleted the dummy-hash timing defence** to test whether the
+  suite would notice. The security timing test caught it — proving the defence has
+  a real, executable regression guard, not just a comment.
+
+## How this maps to building AI features
+
+These same patterns are how I'd ship an AI capability into a mortgage workflow
+responsibly: verification-forced prompting and citations for **grounding**;
+schema-constrained outputs for **validation**; an **eval harness** (the review
+pass, formalised as regression tests) gating every prompt change; and adversarial
+red-teaming before release. The judgment — what to build, what to trust, what to
+reject — stays human. That is the entire point, and it's the discipline I'd bring
+to an AI-strategy team. (Governance framing: see [Compliance](COMPLIANCE.md).)
+
+---
+
+Every architectural and security decision on this project is mine to defend. The
+tooling widened research breadth and review depth; it did not stand in for
+judgment.
