@@ -38,7 +38,7 @@ jobs:
       TARGET_ENV: ${{ inputs.environment == 'production' && 'prod' || inputs.environment }}
       IMAGE_TAG: ${{ inputs.image_tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
