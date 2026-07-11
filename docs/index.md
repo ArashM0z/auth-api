@@ -49,6 +49,15 @@ RFC 9457, RFC 9110) rather than folklore.
 
   How AI was used — and why the judgment calls are mine to defend.
 
+- :material-play-circle:{ .lg .middle } **[Live tools](https://arashm0z.github.io/auth-api/playground.html)**
+
+  ***
+
+  Try it, don't just read it: the [request playground](https://arashm0z.github.io/auth-api/playground.html),
+  the [API reference](https://arashm0z.github.io/auth-api/api.html), the
+  [rate-limiter demo](https://arashm0z.github.io/auth-api/ratelimit.html), and the
+  [infrastructure tour](https://arashm0z.github.io/auth-api/).
+
 </div>
 
 ## The system in one picture

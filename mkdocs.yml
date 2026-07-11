@@ -40,6 +40,11 @@ theme:
 
 nav:
   - Home: index.md
+  - Live tools:
+      - Landing tour: https://arashm0z.github.io/auth-api/
+      - API reference: https://arashm0z.github.io/auth-api/api.html
+      - Playground: https://arashm0z.github.io/auth-api/playground.html
+      - Rate-limiter demo: https://arashm0z.github.io/auth-api/ratelimit.html
   - Design rationale: design-rationale.md
   - Architecture (arc42): architecture.md
   - Diagrams: diagrams.md
