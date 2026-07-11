@@ -93,7 +93,7 @@ scope-discipline beat feature count).
 - **Forces.** Brute-force defense needs two coordinated windows (per-IP for all
   traffic; per-username failures, cleared on success) and must hold **across
   replicas**.
-- **Rationale.** ~90 lines: `INCR` + `EXPIRE NX` + `TTL` in one `MULTI`. State in
+- **Rationale.** ~70 lines: `INCR` + `EXPIRE NX` + `TTL` in one `MULTI`. State in
   Redis means the cap is correct at any horizontal scale (an in-memory limiter
   multiplies its threshold by the instance count). The failure counter keys on the
   **submitted** username, real or not, so it can't be used as an existence probe.
@@ -103,7 +103,8 @@ scope-discipline beat feature count).
   was a real HIGH-severity finding from the adversarial review; the fix is
   increment-then-read, and it has a concurrency regression test.
 - **Alternatives rejected.** `@fastify/rate-limit` (built around ioredis; no clean
-  `peek`/`clear` for the failure window; this project standardizes on node-redis).
+  atomic consume-and-check `hit` / success-`clear` semantics for the failure
+  window; this project standardizes on node-redis).
 - **Consequences.** Fixed windows allow ≤2× burst at the edges — accepted at these
   thresholds; a sliding-log/token-bucket is the documented refinement.
   → [ADR-0008](adr/0008-custom-redis-rate-limiter.md)
@@ -140,8 +141,9 @@ scope-discipline beat feature count).
 
 ## 8. Scope discipline — no JWT / session issuance
 
-- **Forces.** It is tempting to bolt on JWTs and become
-  gradeable on token expiry, revocation, and rotation they never finished.
+- **Forces.** It is tempting to bolt on JWTs — and thereby become gradeable on
+  token expiry, revocation, and rotation that a two-endpoint brief gives no room
+  to finish properly.
 - **Rationale.** The brief asks for exactly two capabilities. Credential
   _verification_ is a complete, composable internal service; a gateway or session
   service consumes it and owns token lifecycle. A half-built token layer is
@@ -180,6 +182,8 @@ scope-discipline beat feature count).
 - **Rationale.** Configure durability rather than default it: AOF `appendfsync
 everysec` bounds crash-loss to ~1s of writes; production notes recommend RDB+AOF
   together.
+- **Alternatives rejected.** Postgres as the system of record now (the brief
+  mandates Redis for storage; named as the production evolution below instead).
 - **Consequences — stated plainly.** For a regulated mortgage fintech I would make
   **Postgres** the system of record and keep Redis for rate-limiting and sessions.
   Naming this before being asked is the point: it's a conscious, bounded trade-off,
@@ -192,7 +196,12 @@ everysec` bounds crash-loss to ~1s of writes; production notes recommend RDB+AOF
   HashiCorp's BUSL relicense — drop-in compatible with the HCL/provider ecosystem.
   The stack (ECS Fargate, ALB, ElastiCache, ECR) is the same shape Lendesk runs,
   and its security invariants are asserted by native `tofu test`, not hoped for.
-- **Consequences.** Validated, not applied — the demo stays zero-cost.
+- **Alternatives rejected.** Terraform proper (BUSL 1.1 since 2023 —
+  source-available, not open source); CloudFormation/CDK (locks the IaC to one
+  cloud's tooling).
+- **Consequences.** Never applied to billable AWS — but applied end-to-end
+  against LocalStack (emulated AWS APIs), so the Terraform is exercised, not
+  just linted, and the demo stays zero-cost.
 
 ---
 

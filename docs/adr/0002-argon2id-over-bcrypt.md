@@ -11,7 +11,9 @@ bcrypt remains the most common pick in Node projects.
 
 Argon2id via the `argon2` package (node-argon2, prebuilt binaries), at the
 OWASP Password Storage Cheat Sheet minimum configuration: **m=19456 KiB
-(19 MiB), t=2, p=1** — which happens to be the library default.
+(19 MiB), t=2, p=1** — set explicitly via `HASH_MEMORY_KIB` /
+`HASH_TIME_COST` / `HASH_PARALLELISM` rather than trusting library defaults
+(node-argon2 0.44 defaults to m=65536, t=3, p=4).
 
 ## Rationale
 

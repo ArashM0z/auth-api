@@ -106,7 +106,7 @@ All 13 diagrams, from system context to a single Redis command:
 | **Login safety**     | Wrong-password and unknown-user are identical in body, headers, **and timing**                                 |
 | **Errors**           | RFC 9457 `application/problem+json`, stable `code` + `requestId`, everywhere                                   |
 | **Rate limiting**    | Two Redis-backed windows (per-IP, per-username failures) — correct across replicas                             |
-| **Tests**            | 79 tests, ~96% coverage, 5 layers + Stryker mutation testing (87%, gate 80%)                                   |
+| **Tests**            | 79 tests, ~97% coverage, 5 layers + Stryker mutation testing (87%, gate 80%)                                   |
 | **Infra**            | OpenTofu → ECS Fargate + ALB + ElastiCache + ECR — applied end-to-end on LocalStack (emulated AWS), zero spend |
 
 ## The testing & verification arsenal
