@@ -79,8 +79,8 @@ and costs nothing.
 ## Where the rest of the release story lives
 
 - **What gets deployed** — the [CI pipeline](diagrams.md#12-cicd-pipeline)
-  must be green first; `main` requires ten checks including tests, mutation,
-  Trivy, gitleaks, and dependency-review.
+  must be green first; `main` requires eleven checks including tests,
+  mutation, Trivy, gitleaks, dependency-review, and the IaC static suite.
 - **Infra assurance** — `tofu test` + tflint + checkov on every infra change,
   plus the automatic LocalStack apply.
 - **Config & secrets** — [Configuration](CONFIGURATION.md): Secrets Manager
