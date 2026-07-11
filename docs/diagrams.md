@@ -69,8 +69,7 @@ flowchart TD
 
 ## 5. Login — the timing-safe sequence ★
 
-Unknown-user, wrong-password, and bad-format all cost the same and return the same
-401. The gate increments **before** the hash (the TOCTOU fix).
+Unknown-user, wrong-password, and bad-format all cost the same and return the same 401. The gate increments **before** the hash (the TOCTOU fix).
 
 ```mermaid
 sequenceDiagram

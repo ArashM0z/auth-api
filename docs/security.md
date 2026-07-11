@@ -38,22 +38,22 @@ sequenceDiagram
 
 ## Threat model & mitigations
 
-| Threat | Mitigation |
-| --- | --- |
-| Credential theft from a leaked store | Argon2id (OWASP first-choice, memory-hard), PHC strings with per-password salts, rehash-on-login |
-| Brute force / credential stuffing | Per-username failure window (10/15 min, clears on success) + per-IP window (100/min), both in Redis so limits hold across replicas; Argon2id cost caps guess rate |
-| Enumeration — response oracle | Wrong-password and unknown-user return byte-identical 401s; loose login schema so malformed usernames also 401, not 400 |
-| Enumeration — timing oracle | Unknown users burn a dummy Argon2id verify; registration hashes **before** the uniqueness check so 409s cost the same as 201s |
-| Duplicate-account race | `SET NX` atomic create-if-absent — no check-then-set window (concurrency test) |
-| Homoglyph / case-trick accounts | Usernames NFC-normalized, lowercased, restricted to `[a-z0-9._-]` |
-| Weak passwords | NIST SP 800-63B-4: ≥15 code points, no composition rules, 10k blocklist, reject-never-truncate |
-| Memory-exhaustion DoS via hashing | `p-limit` gate: worst case `HASH_MAX_CONCURRENCY × 19 MiB` |
-| Event-loop overload | `@fastify/under-pressure` sheds load with 503 + `Retry-After` |
-| Mass assignment / smuggled fields | AJV `removeAdditional:false` + `additionalProperties:false` — unknown fields rejected, not stripped |
-| Secrets in responses | Response-schema serialization whitelists fields per status — a hash structurally cannot appear |
-| Secrets in logs | Bodies never logged; pino `redact` censors password paths as defense in depth |
-| Missing forensic trail | Structured audit events with request id + IP, never credentials |
-| Supply chain | Lockfile, `npm audit` gate, CodeQL, Dependabot (npm/actions/docker/terraform) |
+| Threat                               | Mitigation                                                                                                                                                        |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credential theft from a leaked store | Argon2id (OWASP first-choice, memory-hard), PHC strings with per-password salts, rehash-on-login                                                                  |
+| Brute force / credential stuffing    | Per-username failure window (10/15 min, clears on success) + per-IP window (100/min), both in Redis so limits hold across replicas; Argon2id cost caps guess rate |
+| Enumeration — response oracle        | Wrong-password and unknown-user return byte-identical 401s; loose login schema so malformed usernames also 401, not 400                                           |
+| Enumeration — timing oracle          | Unknown users burn a dummy Argon2id verify; registration hashes **before** the uniqueness check so 409s cost the same as 201s                                     |
+| Duplicate-account race               | `SET NX` atomic create-if-absent — no check-then-set window (concurrency test)                                                                                    |
+| Homoglyph / case-trick accounts      | Usernames NFC-normalized, lowercased, restricted to `[a-z0-9._-]`                                                                                                 |
+| Weak passwords                       | NIST SP 800-63B-4: ≥15 code points, no composition rules, 10k blocklist, reject-never-truncate                                                                    |
+| Memory-exhaustion DoS via hashing    | `p-limit` gate: worst case `HASH_MAX_CONCURRENCY × 19 MiB`                                                                                                        |
+| Event-loop overload                  | `@fastify/under-pressure` sheds load with 503 + `Retry-After`                                                                                                     |
+| Mass assignment / smuggled fields    | AJV `removeAdditional:false` + `additionalProperties:false` — unknown fields rejected, not stripped                                                               |
+| Secrets in responses                 | Response-schema serialization whitelists fields per status — a hash structurally cannot appear                                                                    |
+| Secrets in logs                      | Bodies never logged; pino `redact` censors password paths as defense in depth                                                                                     |
+| Missing forensic trail               | Structured audit events with request id + IP, never credentials                                                                                                   |
+| Supply chain                         | Lockfile, `npm audit` gate, CodeQL, Dependabot (npm/actions/docker/terraform)                                                                                     |
 
 ## Residual risks (named on purpose)
 
@@ -71,7 +71,7 @@ Volunteering the limits is the point — each has a mitigation and a next step.
   transient enumeration signal, bounded by the per-username limiter. Fix: pin the
   dummy hash to the weakest deployed parameters, or enforce a constant minimum
   handler time, and pair a parameter bump with a forced-rehash migration.
-  *(Surfaced by the adversarial review.)*
+  _(Surfaced by the adversarial review.)_
 - **409 on registration reveals username existence.** Unavoidable for username
   signup; the login side leaks nothing and registration is IP-rate-limited.
 

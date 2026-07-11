@@ -29,7 +29,7 @@ scope-discipline beat feature count).
 - **Rationale.** Fastify compiles a JSON Schema per route (AJV) for validation,
   and — decisively — **serializes responses against a schema too**
   (fast-json-stringify). That makes "a password hash can never appear in a
-  response" a *structural* guarantee, not a convention. The same TypeBox schema
+  response" a _structural_ guarantee, not a convention. The same TypeBox schema
   drives runtime validation, compile-time types, and the OpenAPI document — one
   source of truth, zero drift.
 - **Alternatives rejected.** Express ships no validation and no response
@@ -45,7 +45,7 @@ scope-discipline beat feature count).
   service, and the store is the crown-jewel target.
 - **Rationale.** OWASP lists Argon2id **first**; bcrypt is "legacy-only." Argon2id
   is memory-hard — ~19 MiB per guess versus bcrypt's ~4 KB — which is what makes
-  cracking a *leaked* store expensive. And bcrypt **silently truncates at 72
+  cracking a _leaked_ store expensive. And bcrypt **silently truncates at 72
   bytes**, a real correctness bug with a generous max length. PHC-format hashes
   embed their parameters, which enables **rehash-on-login**.
 - **Alternatives rejected.** bcrypt (truncation + weaker); scrypt (OWASP-ranked
@@ -74,7 +74,7 @@ scope-discipline beat feature count).
 ## 4. Timing-safe login (no enumeration oracle)
 
 - **Forces.** If "unknown user" is cheaper or different from "wrong password", an
-  attacker can enumerate accounts by response *or* by stopwatch.
+  attacker can enumerate accounts by response _or_ by stopwatch.
 - **Rationale.** Three defenses compose: (a) the login schema is deliberately
   loose (any non-empty strings) so a malformed username returns the same 401, not
   a 400; (b) the unknown-user path runs a real Argon2id verify against a
@@ -98,7 +98,7 @@ scope-discipline beat feature count).
   multiplies its threshold by the instance count). The failure counter keys on the
   **submitted** username, real or not, so it can't be used as an existence probe.
   **The critical detail:** the failure slot is consumed with an atomic `INCR`
-  *before* the expensive verify. A read-only peek-then-check would be a TOCTOU race
+  _before_ the expensive verify. A read-only peek-then-check would be a TOCTOU race
   — a concurrent burst could all read `count < max` and slip past the cap. This
   was a real HIGH-severity finding from the adversarial review; the fix is
   increment-then-read, and it has a concurrency regression test.
@@ -112,7 +112,7 @@ scope-discipline beat feature count).
 
 - **Forces.** The brief wants "proper error checking, with error responses in a
   JSON body." Most APIs invent an ad-hoc `{ error }` envelope.
-- **Rationale.** Error format is a *standards-citation* exercise, not an invention.
+- **Rationale.** Error format is a _standards-citation_ exercise, not an invention.
   Every non-2xx is `application/problem+json` with a stable machine-readable
   `code`, a `requestId` correlating to logs, and a field-level `errors[]` on
   validation. Uniformity is itself a security property — the 401 body is identical
@@ -120,18 +120,18 @@ scope-discipline beat feature count).
 - **Alternatives rejected.** Bespoke error envelope (no tooling, no taxonomy);
   leaving `type` as `about:blank` (loses the machine-readable problem taxonomy).
 - **Consequences.** One deliberate asymmetry: login failures carry a generic detail
-  (enumeration defense) while registration failures list *every* violated rule at
+  (enumeration defense) while registration failures list _every_ violated rule at
   once (developer experience). → [ADR-0006](adr/0006-rfc9457-problem-details.md)
 
 ## 7. Bounded hashing — the concurrency gate
 
-- **Forces.** Argon2id's memory-hardness is the security feature *and* an
+- **Forces.** Argon2id's memory-hardness is the security feature _and_ an
   operational hazard: each in-flight hash reserves ~19 MiB. Unbounded concurrency
   turns a login burst into a self-inflicted memory DoS.
 - **Rationale.** All hash/verify work goes through a `p-limit` gate
   (`maxConcurrency` default 8), so worst-case hashing memory is a bounded,
   predictable `8 × 19 ≈ 152 MiB`. The gate's queue depth is exported as a
-  Prometheus gauge — the signal to scale out *before* logins start queueing.
+  Prometheus gauge — the signal to scale out _before_ logins start queueing.
 - **Alternatives rejected.** No gate (OOM under load); a global mutex (throughput
   collapse); tuning Argon2 down for speed (weakens the actual security property).
 - **Consequences.** Sustained login throughput is capped — deliberately. The
@@ -143,7 +143,7 @@ scope-discipline beat feature count).
 - **Forces.** It is tempting to bolt on JWTs and become
   gradeable on token expiry, revocation, and rotation they never finished.
 - **Rationale.** The brief asks for exactly two capabilities. Credential
-  *verification* is a complete, composable internal service; a gateway or session
+  _verification_ is a complete, composable internal service; a gateway or session
   service consumes it and owns token lifecycle. A half-built token layer is
   negative value in both security and signal.
 - **Alternatives rejected.** Ship a JWT layer (out of scope, under-designed).
@@ -155,8 +155,8 @@ scope-discipline beat feature count).
 - **Forces.** The brief says "200 OK for correct requests." RFC 9110 says resource
   creation is a 201 + `Location`.
 - **Rationale.** Follow the RFC where the brief is generic, follow the brief where
-  it is specific (the 200/401 clause plainly targets *login*). Silent literal
-  compliance would be the *less* correct API; silent deviation would be worse.
+  it is specific (the 200/401 clause plainly targets _login_). Silent literal
+  compliance would be the _less_ correct API; silent deviation would be worse.
   So: deviate, and write it down.
 - **Consequences.** A reviewer hard-coding `=== 200` on create sees 201; the README
   and this page flag it up front. → [ADR-0004](adr/0004-201-created-deviation.md)
@@ -164,7 +164,7 @@ scope-discipline beat feature count).
 ## 10. NIST SP 800-63B-4 password policy
 
 - **Forces.** "Pass a basic security audit (e.g. password complexity)." The legacy
-  reflex is composition rules; NIST rev-4 (final, 2025) *prohibits* them.
+  reflex is composition rules; NIST rev-4 (final, 2025) _prohibits_ them.
 - **Rationale.** Length is the only strength rule (≥15 code points for
   single-factor), no composition rules, screen against a 10k-common blocklist, NFC
   normalization, reject-never-truncate, no forced rotation. Citing the current
@@ -178,7 +178,7 @@ scope-discipline beat feature count).
 
 - **Forces.** The brief mandates Redis for storage. Credentials are durable data.
 - **Rationale.** Configure durability rather than default it: AOF `appendfsync
-  everysec` bounds crash-loss to ~1s of writes; production notes recommend RDB+AOF
+everysec` bounds crash-loss to ~1s of writes; production notes recommend RDB+AOF
   together.
 - **Consequences — stated plainly.** For a regulated mortgage fintech I would make
   **Postgres** the system of record and keep Redis for rate-limiting and sessions.
@@ -201,13 +201,13 @@ scope-discipline beat feature count).
 A rationale is only "solid" if a regression would be caught. Each decision above
 has an executable guard:
 
-| Decision | The test that proves it |
-| --- | --- |
-| Atomic uniqueness (#3) | 8 concurrent registrations → exactly one 201 |
-| Timing safety (#4) | measured medians of unknown-user vs wrong-password within tolerance |
-| TOCTOU fix (#5) | concurrent-burst regression test on the failure limiter |
-| Response whitelisting (#1) | security suite asserts no hash/PHC prefix ever appears |
-| Reject-not-truncate (#10) | over-long password → 422 with a `max_length` rule |
+| Decision                   | The test that proves it                                             |
+| -------------------------- | ------------------------------------------------------------------- |
+| Atomic uniqueness (#3)     | 8 concurrent registrations → exactly one 201                        |
+| Timing safety (#4)         | measured medians of unknown-user vs wrong-password within tolerance |
+| TOCTOU fix (#5)            | concurrent-burst regression test on the failure limiter             |
+| Response whitelisting (#1) | security suite asserts no hash/PHC prefix ever appears              |
+| Reject-not-truncate (#10)  | over-long password → 422 with a `max_length` rule                   |
 
 That last column is why I can say these are decisions I can **defend line by
 line**, not assertions.

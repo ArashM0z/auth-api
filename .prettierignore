@@ -1,0 +1,10 @@
+# Recovered static landing site — deployed verbatim to GitHub Pages, not
+# authored in this repo's style; formatting churn would rewrite history.
+pages/
+
+# Build outputs
+site/
+out/
+dist/
+coverage/
+reports/

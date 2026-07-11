@@ -1,7 +1,7 @@
 # AI Workflow
 
 Honest disclosure of how AI was used on this project — because for this kind of
-work, *how and why* matters more than *whether*. The short version: I hold the
+work, _how and why_ matters more than _whether_. The short version: I hold the
 **intent and the judgment**; AI supplies the **breadth and the typing**. The
 result is code I can defend line by line, which is the only reason it's worth
 submitting.
@@ -9,9 +9,9 @@ submitting.
 ## The division of labor
 
 The decisions that shaped this service are mine: scope discipline (no JWT),
-treating username uniqueness as an *atomicity* problem, making login
-*timing-safe*, holding every choice to a **cited standard** rather than folklore,
-and running an adversarial review and *acting* on it. AI wrote code, tests, and
+treating username uniqueness as an _atomicity_ problem, making login
+_timing-safe_, holding every choice to a **cited standard** rather than folklore,
+and running an adversarial review and _acting_ on it. AI wrote code, tests, and
 first-draft docs against that direction, verified facts against primary sources,
 and ran the review. I supervised throughout, redirected it when it drifted, and
 made the calls that mattered.
@@ -21,7 +21,7 @@ judgment.
 
 ## Context & prompt engineering — the techniques that made it reliable
 
-An LLM's default failure mode is *confident wrongness*. The workflow was
+An LLM's default failure mode is _confident wrongness_. The workflow was
 engineered to convert that liability into leverage. Each pattern below is
 reusable — it's exactly how I'd build a production AI feature responsibly.
 
@@ -31,9 +31,9 @@ Every stack and standards claim had to be verified against a **primary source**
 before it entered the design. The load-bearing part is the permission-to-fail
 clause:
 
-> *"Report only what you can verify on the web, with URLs. Prefer primary sources
+> _"Report only what you can verify on the web, with URLs. Prefer primary sources
 > — npm, IETF Datatracker, NIST, OWASP. If a claim cannot be verified, say so
-> explicitly rather than guessing."*
+> explicitly rather than guessing."_
 
 Giving the model an explicit exit ("say so rather than guess") is what stops it
 inventing confidence. This caught real traps: a package version that didn't
@@ -45,10 +45,10 @@ rename that would otherwise have burned an hour of debugging.
 Before submission, independent passes attacked the code. The prompt inverts the
 model's natural agreeableness:
 
-> *"Actively try to BREAK this. Find concrete failure scenarios — specific
+> _"Actively try to BREAK this. Find concrete failure scenarios — specific
 > inputs/state that produce wrong behaviour — not style notes. For each finding,
 > give the file/line, the scenario, and how you verified it is real. **Default to
-> 'refuted' unless you can demonstrate the failure.**"*
+> 'refuted' unless you can demonstrate the failure.**"_
 
 Refute-by-default filters plausible-but-wrong findings, which are the dominant
 failure mode of AI review. This pass surfaced a real **HIGH-severity brute-force
@@ -82,15 +82,15 @@ the API itself applies with TypeBox response schemas. Structured output turns
 ### 6. The tight verify loop
 
 Every change ran **typecheck → lint → test** before the next. Coverage grew
-*with* the code, not after; the strictest TypeScript settings stayed on
+_with_ the code, not after; the strictest TypeScript settings stayed on
 throughout, so the compiler acted as a continuous reviewer. Numbers in the README
-(latency, timing medians) are *measured*, not asserted.
+(latency, timing medians) are _measured_, not asserted.
 
 ## Evidence the workflow was real
 
 - Fastify's built-in `text/plain` parser turning a should-be-**415** into a
-  **400** — caught by an integration test written *before* the fix.
-- Fastify's AJV defaults silently *stripping* unknown body fields — inverted to
+  **400** — caught by an integration test written _before_ the fix.
+- Fastify's AJV defaults silently _stripping_ unknown body fields — inverted to
   strict rejection (`removeAdditional: false`).
 - A rate-limiter **TOCTOU race** under concurrency — fixed with an atomic gate and
   a concurrency regression test.

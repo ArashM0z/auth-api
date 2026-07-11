@@ -13,14 +13,14 @@ theme:
     logo: material/shield-key
     repo: fontawesome/brands/github
   palette:
-    - media: "(prefers-color-scheme: light)"
+    - media: '(prefers-color-scheme: light)'
       scheme: default
       primary: teal
       accent: teal
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
+    - media: '(prefers-color-scheme: dark)'
       scheme: slate
       primary: teal
       accent: teal
