@@ -21,10 +21,12 @@ flowchart LR
 
 Three properties carry the safety story:
 
-1. **One artifact, promoted — never rebuilt.** The image is tagged with the
-   git SHA and ECR enforces **immutable tags**. Staging and prod redeploy the
-   exact bytes dev ran; the build step detects an existing tag and skips
-   straight to promotion.
+1. **One artifact, promoted — never rebuilt.** Builds happen **only on push**
+   and always tag the pushed commit's SHA, so image provenance is
+   source-only — dispatch inputs cannot influence build content (Checkov
+   CKV_GHA_7's concern, satisfied by design). ECR enforces **immutable
+   tags**; a promotion verifies the artifact already exists and fails if it
+   was never built. Staging and prod redeploy the exact bytes dev ran.
 2. **The prod gate is platform-enforced.** The `production` GitHub environment
    requires a reviewer approval before the deploy job may start — the control
    lives in repository settings, not in workflow code a PR could edit.

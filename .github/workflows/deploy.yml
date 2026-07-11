@@ -2,21 +2,30 @@ name: deploy
 
 # Environment-promotion pipeline: dev → staging → prod.
 #
-#   - push to main (app or infra changes)  → deploys DEV automatically
-#   - workflow_dispatch                    → promotes a build to STAGING or PROD
+#   - push to main (app or infra changes)  → builds ONCE (tag = git SHA) and
+#                                            deploys DEV automatically
+#   - workflow_dispatch                    → PROMOTES an already-built image
+#                                            to STAGING or PROD — it never
+#                                            builds; the artifact must exist
 #   - prod requires a human approval — enforced by the GitHub `production`
 #     environment's required reviewers, not by workflow code
 #
+# Supply-chain posture (CKV_GHA_7): the BUILD is never affected by user
+# input — it runs only on push events and always tags the pushed commit's
+# SHA, so image provenance is source-only. Dispatch inputs select a deploy
+# TARGET and an EXISTING artifact; a promotion of a tag that was never built
+# from main fails at the verify step.
+# checkov:skip=CKV_GHA_7: dispatch inputs choose the deploy target/artifact only; the build job is push-only and input-independent
+#
 # Authentication is OIDC (aws-actions/configure-aws-credentials with a
-# per-environment role ARN) — no long-lived AWS keys anywhere. Images are
-# tagged with the git SHA and the ECR repo enforces immutable tags, so a
-# promotion redeploys the EXACT artifact that was tested, never a rebuild.
+# per-environment role ARN) — no long-lived AWS keys anywhere. ECR enforces
+# immutable tags, so a promotion redeploys the EXACT bytes dev ran.
 #
 # The whole pipeline is inert until the repository variable DEPLOY_ENABLED
-# is 'true' and each GitHub environment defines AWS_ROLE_ARN / AWS_REGION —
-# this project deliberately never deploys to billable AWS (the stack is
-# exercised end-to-end on LocalStack instead; see localstack.yml). The
-# pipeline exists so flipping one variable turns it on.
+# is 'true' and each GitHub environment defines AWS_ROLE_ARN / AWS_REGION /
+# TF_STATE_BUCKET — this project deliberately never deploys to billable AWS
+# (the stack is exercised end-to-end on LocalStack instead; see
+# localstack.yml). The pipeline exists so flipping one variable turns it on.
 on:
   push:
     branches: [main]
@@ -30,13 +39,13 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Environment to deploy
+        description: Environment to promote to
         type: choice
-        options: [dev, staging, prod]
+        options: [staging, prod]
         required: true
       image_tag:
-        description: Image tag (git SHA) to promote; defaults to the current commit
-        required: false
+        description: Git SHA of an already-built image to promote
+        required: true
 
 permissions:
   contents: read
@@ -47,19 +56,14 @@ concurrency:
   group: deploy-${{ github.event_name == 'push' && 'dev' || inputs.environment }}
   cancel-in-progress: false
 
-env:
-  TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
-  IMAGE_TAG: ${{ inputs.image_tag != '' && inputs.image_tag || github.sha }}
-
 jobs:
   build:
-    name: Build & push image (immutable, git-SHA tag)
-    if: vars.DEPLOY_ENABLED == 'true'
+    name: Build & push image (push-only, tag = git SHA)
+    # Builds happen ONLY on push — never from dispatch inputs.
+    if: vars.DEPLOY_ENABLED == 'true' && github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
-    outputs:
-      tag: ${{ env.IMAGE_TAG }}
+    environment: dev
     steps:
       - uses: actions/checkout@v4
       - name: Configure AWS credentials (OIDC)
@@ -70,26 +74,32 @@ jobs:
       - name: Login to ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Build and push (skip if the tag already exists — promotions reuse artifacts)
+      - name: Build and push
         run: |
           repo="${{ steps.ecr.outputs.registry }}/auth-api"
-          if aws ecr describe-images --repository-name auth-api \
-               --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
-            echo "image $IMAGE_TAG already in ECR — promoting the existing artifact"
-            exit 0
-          fi
-          docker build --target prod -t "$repo:$IMAGE_TAG" .
-          docker push "$repo:$IMAGE_TAG"
+          docker build --target prod -t "$repo:${{ github.sha }}" .
+          docker push "$repo:${{ github.sha }}"
 
   deploy:
     name: Deploy ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
-    needs: build
+    needs: [build]
+    # Push: deploy dev after a successful build. Dispatch: promote without
+    # building (the build job is skipped, hence always() + explicit terms).
+    if: >-
+      always() && vars.DEPLOY_ENABLED == 'true' &&
+      (
+        (github.event_name == 'push' && needs.build.result == 'success') ||
+        github.event_name == 'workflow_dispatch'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # The GitHub environment supplies per-env vars AND the protection rules:
     # `production` requires a reviewer approval before this job starts.
     environment:
       name: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+    env:
+      TARGET_ENV: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+      IMAGE_TAG: ${{ github.event_name == 'push' && github.sha || inputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure AWS credentials (OIDC)
@@ -97,6 +107,13 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
+      - name: Verify the artifact exists (promotions never build)
+        run: |
+          aws ecr describe-images --repository-name auth-api \
+            --image-ids imageTag="$IMAGE_TAG" >/dev/null || {
+              echo "::error::image tag $IMAGE_TAG was never built — promote an existing build";
+              exit 1;
+            }
       - uses: opentofu/setup-opentofu@v2
       - name: Init (per-environment state)
         working-directory: infra
@@ -110,7 +127,7 @@ jobs:
         run: |
           tofu plan -input=false -out=tfplan \
             -var-file="environments/${TARGET_ENV}.tfvars" \
-            -var "app_image_tag=${{ needs.build.outputs.tag }}"
+            -var "app_image_tag=${IMAGE_TAG}"
       - name: Apply
         working-directory: infra
         run: tofu apply -input=false tfplan
@@ -119,4 +136,4 @@ jobs:
           aws ecs wait services-stable \
             --cluster "auth-api-${TARGET_ENV}" \
             --services "auth-api-${TARGET_ENV}"
-          echo "deploy of ${{ needs.build.outputs.tag }} to ${TARGET_ENV} is stable"
+          echo "deploy of ${IMAGE_TAG} to ${TARGET_ENV} is stable"
