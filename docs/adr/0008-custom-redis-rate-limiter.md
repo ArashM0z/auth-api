@@ -1,6 +1,6 @@
 # ADR-0008: Purpose-built Redis rate limiter (not a plugin)
 
-**Status:** accepted
+**Status:** accepted — amended 2026-07-11 (`peek` removed; see [Amendment](#amendment-2026-07-11-peek-removed-after-adversarial-review))
 
 ## Context
 
@@ -36,3 +36,20 @@ A ~90-line `RedisRateLimiter` (fixed windows; atomic
 Fixed windows allow ≤2× burst at window edges, acceptable at these
 thresholds; a sliding-log or token bucket is a documented future refinement.
 90 lines of owned code carry their own tests (unit + integration).
+
+## Amendment (2026-07-11): `peek` removed after adversarial review
+
+The original design gated login with `peek` (a read-only check) and consumed
+a slot only after a failed verify. Adversarial review found that to be a
+**HIGH-severity TOCTOU race**: a concurrent burst of guesses could all read
+`count < max` before any increment landed, letting the entire burst past the
+cap and into the expensive Argon2id verify.
+
+The shipped limiter therefore has **two verbs, `hit` and `clear`**. The login
+handler consumes a slot with an atomic `INCR` **before** verification and
+checks the returned count; Redis serializes the increments, so at most `max`
+attempts per window ever reach a verify, and the window still clears on
+success. A concurrency regression test pins the behaviour.
+
+The sections above are retained as written for the historical record; where
+they mention `peek`, this amendment supersedes them.

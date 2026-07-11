@@ -15,8 +15,8 @@ the distilled, cross-cutting version; these are the long form.
 | [0007](0007-nist-password-policy.md)      | NIST 800-63B-4 policy — 15+ chars, no composition rules                  |
 | [0008](0008-custom-redis-rate-limiter.md) | Purpose-built Redis rate limiter                                         |
 
-> **Note on ADR-0008:** it describes a `peek` verb from the original limiter
-> design. The shipped `rate-limit.ts` has only `hit()` and `clear()` — the
-> peek-then-check approach was the racy design the adversarial review replaced with
-> the atomic `hit()` gate. The code is the source of truth; this ADR predates the
-> fix.
+> **Note on ADR-0008:** the original decision included a `peek` verb; adversarial
+> review found peek-then-check to be a TOCTOU race, and the shipped limiter uses
+> an atomic `hit()` gate instead. ADR-0008 carries a dated
+> [amendment](0008-custom-redis-rate-limiter.md#amendment-2026-07-11-peek-removed-after-adversarial-review)
+> documenting the change — ADRs here are amended, never rewritten.
