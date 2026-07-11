@@ -9,6 +9,15 @@ response, the OpenAPI contract is generated from the same schemas that validate
 requests (CI fails on drift), and every security decision cites the standard it
 implements (NIST SP 800-63B-4, OWASP, RFC 9110) rather than folklore.
 
+**Approach.** Two calls shaped the design from the outset: treat username
+uniqueness as an _atomicity_ problem (a single `SET NX`, never check-then-set),
+and make login _timing-safe_ so it can't be used to enumerate accounts.
+Everything else follows from two rules — hold each decision to a cited standard,
+and keep scope tight. The reasoning for each choice is an
+[ADR](https://arashm0z.github.io/auth-api/docs/adr/); the honest limits and the
+next iteration are on the
+[roadmap](https://arashm0z.github.io/auth-api/docs/roadmap/).
+
 ## Live — nothing to install
 
 Hosted on GitHub Pages:
