@@ -50,6 +50,7 @@ nav:
   - Diagrams: diagrams.md
   - Security model: security.md
   - Compliance & AI governance: COMPLIANCE.md
+  - Deployment (dev→staging→prod): DEPLOYMENT.md
   - Configuration: CONFIGURATION.md
   - AI workflow: AI_WORKFLOW.md
   - Decisions (ADRs):
