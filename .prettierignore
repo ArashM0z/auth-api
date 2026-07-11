@@ -11,3 +11,8 @@ reports/
 
 # Snippet includes: Material grid cards need 4-space indents prettier would collapse
 docs/_includes/
+
+# CHANGELOG.md is generated and owned by release-please; its markdown layout is
+# not prettier's, so letting prettier rewrite it would both fail the lint gate
+# and corrupt release-please's changelog parsing on the next release.
+CHANGELOG.md
