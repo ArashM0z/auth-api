@@ -14,9 +14,11 @@ on:
       - 'infra/**'
       - '.github/workflows/iac.yml'
 
-# Read-only token: nothing here writes to the repo or needs cloud creds.
+# Read-only for the repo; security-events write lets Checkov publish SARIF
+# to the Security tab. No cloud credentials are needed anywhere here.
 permissions:
   contents: read
+  security-events: write
 
 concurrency:
   group: iac-${{ github.ref }}
@@ -78,3 +80,14 @@ jobs:
           framework: terraform
           quiet: true
           soft_fail: false
+          output_format: cli,sarif
+          output_file_path: console,checkov-tf.sarif
+
+      # Publish findings to the Security tab even when the step above fails
+      # the build, so regressions are visible, not just red.
+      - name: Upload Checkov results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-tf.sarif
+          category: checkov-terraform

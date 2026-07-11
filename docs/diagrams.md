@@ -177,12 +177,22 @@ flowchart TD
 
 ## 12. CI/CD pipeline
 
-Every push runs the full gate; a red check blocks merge.
+Every push runs the full gate; a red check blocks merge. Security scanners run in
+parallel and report findings to the repository Security tab (SARIF). Docs deploy
+to GitHub Pages on any change under `docs/`.
 
 ```mermaid
 flowchart LR
   L[lint] --> T[typecheck] --> TE[test vs real Redis + coverage]
-  TE --> AU[npm audit high+] --> OA[OpenAPI drift + Spectral] --> DK[docker build + non-root assert]
+  TE --> MU[mutation / Stryker] --> AU[npm audit high+] --> OA[OpenAPI drift + Spectral] --> DK[docker build + non-root assert]
+  subgraph sec [security scanning → Security tab]
+    CQ[CodeQL SAST]
+    TR[Trivy image scan]
+    GL[gitleaks secrets]
+    CK[checkov: Terraform + Dockerfile + Actions]
+    DR[dependency-review on PRs]
+  end
+  DK -.-> DOCS[mkdocs gh-deploy → GitHub Pages]
 ```
 
 ## 13. AWS infrastructure (OpenTofu)
