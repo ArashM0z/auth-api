@@ -25,9 +25,13 @@ export default function Nav({ current }: { current: NavCurrent }) {
         Rate limiter
       </a>
       <a href="visual-guide.html">Visual guide</a>
-      <a href="https://arashm0z.github.io/auth-api/docs/">Docs</a>
+      <a href="https://arashm0z.github.io/auth-api/docs/" target="_blank" rel="noopener">
+        Docs &#8599;
+      </a>
       <span className="sp"></span>
-      <a href="https://github.com/ArashM0z/auth-api">GitHub &#8599;</a>
+      <a href="https://github.com/ArashM0z/auth-api" target="_blank" rel="noopener">
+        GitHub &#8599;
+      </a>
     </nav>
   );
 }

@@ -19,6 +19,27 @@ made the calls that mattered.
 This is how I actually work — AI as a fast, tireless pair, never a substitute for
 judgment.
 
+### The judgment calls, itemized
+
+None of these came from a model. Each is a decision I can defend on its merits,
+and each has an [ADR](adr/index.md) or a test behind it:
+
+- **Scope** — verify credentials, issue nothing. Half a token layer is negative
+  value in both security and signal ([ADR-0005](adr/0005-no-sessions-or-jwt.md)).
+- **Uniqueness is an atomicity problem** — `SET NX`, not check-then-set; a
+  concurrency test proves it ([ADR-0003](adr/0003-atomic-uniqueness-set-nx.md)).
+- **Login must be timing-safe** — a dummy-hash verify on the unknown-user path,
+  a loose schema so malformed usernames still 401, and a measured timing test.
+- **The limiter gate goes _before_ the hash** — the fix for the TOCTOU race the
+  review found ([ADR-0008](adr/0008-custom-redis-rate-limiter.md)).
+- **Standards over folklore** — RFC 9457, NIST 800-63B-4, OWASP, RFC 9110, each
+  cited at the point it's applied.
+- **The trade-offs I chose to accept** — Redis as the store, a fixed-window
+  limiter, ECS over EKS — named openly on the [Roadmap](roadmap.md).
+
+Accepting a suggestion I couldn't defend is how bad code ships; that filter is
+the whole job.
+
 ## Context & prompt engineering — the techniques that made it reliable
 
 An LLM's default failure mode is _confident wrongness_. The workflow was
