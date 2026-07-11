@@ -1,9 +1,19 @@
 name: LocalStack infra test
 
 # Provisions the full AWS stack on LocalStack Pro and asserts it comes up —
-# an integration test for the Terraform, no billable AWS. Manual trigger
-# (uses the Pro trial), and needs a LOCALSTACK_AUTH_TOKEN repository secret.
+# an integration test for the Terraform, no billable AWS. Runs automatically
+# whenever the infrastructure changes, plus on demand (uses the Pro trial;
+# needs a LOCALSTACK_AUTH_TOKEN repository secret).
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/localstack.yml'
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/localstack.yml'
   workflow_dispatch:
 
 permissions:

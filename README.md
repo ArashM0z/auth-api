@@ -23,6 +23,7 @@ OWASP Password Storage Cheat Sheet) rather than folklore.
 - [**API reference**](https://arashm0z.github.io/auth-api/api.html) — the OpenAPI contract, rendered with [Scalar](https://github.com/scalar/scalar)
 - [**Rate-limiter demo**](https://arashm0z.github.io/auth-api/ratelimit.html) — the live per-username failure window
 - [**Infrastructure**](https://arashm0z.github.io/auth-api/) — the Terraform stack applied on [LocalStack](https://localstack.cloud) (56 resources, $0, re-checked in CI)
+- [**Architecture handbook**](https://arashm0z.github.io/auth-api/docs/) — arc42 docs: design rationale, 13 diagrams, security model, compliance & AI governance
 
 Or run it locally:
 
@@ -128,7 +129,7 @@ sequenceDiagram
     participant A as API
     participant R as Redis
     C->>A: POST /v1/auth/login
-    A->>R: peek failure window (per submitted username)
+    A->>R: INCR failure window (atomic gate — per submitted username)
     alt window exhausted
         A-->>C: 429 + Retry-After + RateLimit headers
     else
