@@ -8,3 +8,6 @@ out/
 dist/
 coverage/
 reports/
+
+# Snippet includes: Material grid cards need 4-space indents prettier would collapse
+docs/_includes/
