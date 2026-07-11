@@ -51,6 +51,7 @@ nav:
   - Security model: security.md
   - Compliance & AI governance: COMPLIANCE.md
   - Deployment (dev→staging→prod): DEPLOYMENT.md
+  - Operations (runbook): OPERATIONS.md
   - Configuration: CONFIGURATION.md
   - AI workflow: AI_WORKFLOW.md
   - Decisions (ADRs):
