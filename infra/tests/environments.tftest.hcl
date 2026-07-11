@@ -50,6 +50,21 @@ mock_provider "aws" {
       arn = "arn:aws:ssm:ca-central-1:123456789012:parameter/mock"
     }
   }
+  mock_resource "aws_kms_key" {
+    defaults = {
+      arn = "arn:aws:kms:ca-central-1:123456789012:key/00000000-0000-0000-0000-000000000000"
+    }
+  }
+  mock_resource "aws_cloudwatch_log_group" {
+    defaults = {
+      arn = "arn:aws:logs:ca-central-1:123456789012:log-group:mock"
+    }
+  }
+  mock_resource "aws_wafv2_web_acl" {
+    defaults = {
+      arn = "arn:aws:wafv2:ca-central-1:123456789012:regional/webacl/mock/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 mock_provider "random" {
@@ -69,8 +84,10 @@ run "dev_naming_and_sizing" {
     autoscaling_min_capacity = 1
     autoscaling_max_capacity = 3
     redis_node_type          = "cache.t4g.micro"
+    redis_num_cache_clusters = 1
     log_retention_days       = 7
     log_level                = "debug"
+    alb_deletion_protection  = false
   }
 
   assert {
@@ -118,6 +135,7 @@ run "staging_naming_and_sizing" {
     autoscaling_min_capacity = 2
     autoscaling_max_capacity = 6
     redis_node_type          = "cache.t4g.small"
+    redis_num_cache_clusters = 2
     log_retention_days       = 14
     log_level                = "info"
   }
@@ -147,7 +165,8 @@ run "prod_naming_and_sizing" {
     autoscaling_min_capacity = 3
     autoscaling_max_capacity = 20
     redis_node_type          = "cache.t4g.small"
-    log_retention_days       = 30
+    redis_num_cache_clusters = 2
+    log_retention_days       = 365
     log_level                = "info"
   }
 
@@ -167,8 +186,8 @@ run "prod_naming_and_sizing" {
   }
 
   assert {
-    condition     = aws_cloudwatch_log_group.app.retention_in_days == 30
-    error_message = "prod log retention must be 30 days."
+    condition     = aws_cloudwatch_log_group.app.retention_in_days == 365
+    error_message = "prod log retention must be 365 days."
   }
 }
 

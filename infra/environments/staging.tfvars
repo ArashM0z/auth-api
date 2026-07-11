@@ -13,8 +13,10 @@ desired_count            = 2
 autoscaling_min_capacity = 2
 autoscaling_max_capacity = 6
 
-# One size up from dev to catch memory-pressure issues before prod.
-redis_node_type = "cache.t4g.small"
+# One size up from dev to catch memory-pressure issues before prod, and a
+# primary + replica pair so Multi-AZ failover behaves like prod (redis.tf).
+redis_node_type          = "cache.t4g.small"
+redis_num_cache_clusters = 2
 
 # Two weeks of logs for investigating pre-prod regressions.
 log_retention_days = 14

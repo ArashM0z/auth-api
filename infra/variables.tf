@@ -77,15 +77,32 @@ variable "password_min_length" {
 }
 
 variable "log_retention_days" {
-  description = "CloudWatch log retention. 30 days balances debuggability against storage cost; compliance workloads often need 365+."
+  description = "CloudWatch log retention (also the ALB access-log S3 expiry). Defaults to a compliance-friendly 365; dev/staging override shorter (7/14) to keep storage near-free."
   type        = number
-  default     = 30
+  default     = 365
 }
 
 variable "redis_node_type" {
   description = "ElastiCache node type. cache.t4g.micro (Graviton burstable, ~USD 11/mo on-demand in ca-central-1) is plenty for a demo."
   type        = string
   default     = "cache.t4g.micro"
+}
+
+variable "redis_num_cache_clusters" {
+  description = "Nodes in the Redis replication group (primary + replicas). >= 2 turns on Multi-AZ automatic failover (redis.tf); dev runs 1 to halve cache cost."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.redis_num_cache_clusters >= 1
+    error_message = "redis_num_cache_clusters must be at least 1."
+  }
+}
+
+variable "alb_deletion_protection" {
+  description = "Protect the ALB from accidental deletion. On by default; dev turns it off so `tofu destroy` stays one command."
+  type        = bool
+  default     = true
 }
 
 variable "autoscaling_min_capacity" {
