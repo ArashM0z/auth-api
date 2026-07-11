@@ -215,13 +215,14 @@ useful AWS credentials.
   the task reads `REDIS_URL` from Secrets Manager by ARN, a new task launched
   after rotation picks up the new value with no config change.
 
-- Rotation is intentionally omitted from this never-applied demo (it needs a
-  Lambda with a VPC path to ElastiCache); the checkov finding `CKV2_AWS_57` is
-  skipped inline with that justification.
+- Rotation is intentionally omitted from this demo — it needs a rotation
+  Lambda with a VPC path to ElastiCache, which is out of scope even for the
+  LocalStack apply (the stack is never applied to billable AWS); the checkov
+  finding `CKV2_AWS_57` is skipped inline with that justification.
 
 ## Why the checkov skips exist
 
-Two new-resource findings are suppressed inline in `infra/secrets.tf` and
+Three finding types are suppressed inline in `infra/secrets.tf` and
 `infra/config.tf` with honest, demo-vs-prod justifications:
 
 | ID            | Where                           | Justification                                                                                                                                                                                                                                    |

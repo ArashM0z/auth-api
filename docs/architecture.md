@@ -11,7 +11,8 @@ fast; secure enough to pass an audit; production-level quality.
 
 **Constraints**: Node.js runtime and Redis for data storage (both mandated);
 no time-boxed feature beyond the two capabilities (scope discipline is a
-feature); zero-cost demo (infra validated statically, not applied).
+feature); zero-cost demo (infra never applied to billable AWS; applied
+end-to-end against LocalStack-emulated AWS instead).
 
 **Quality priorities**: security > correctness > operability > throughput >
 feature count.
@@ -76,8 +77,11 @@ make cross-layer misuse a compile error.
 
 ## 5. Runtime view
 
-The two interesting flows are in the README (login sequence diagram with the
-dummy-hash branch) and ADR-0003 (atomic create). Boot order matters:
+The two interesting flows are drawn in [Security model](security.md) (the
+timing-safe login sequence with the dummy-hash branch) and on the
+[Diagrams](diagrams.md) page (§4 atomic create — long form in
+[ADR-0003](adr/0003-atomic-uniqueness-set-nx.md) — and §6, the rate-limiter
+TOCTOU fix). Boot order matters:
 config validation → helmet/under-pressure → swagger → Redis connect →
 hasher init (precomputes the timing-equalization dummy hash) → hooks →
 error handlers → routes.
@@ -85,14 +89,20 @@ error handlers → routes.
 ## 6. Deployment
 
 - **Local/reviewer**: `docker compose up` — prod-target image (non-root, no
-  devDependencies) + Redis with AOF everysec and healthchecks.
-- **AWS (defined in [infra/](../infra/), validated, not applied)**: ECR →
+  devDependencies, no npm/corepack) + Redis with AOF everysec and healthchecks.
+- **AWS (defined in
+  [infra/](https://github.com/ArashM0z/auth-api/tree/main/infra), validated in
+  CI and applied end to end on LocalStack — never on billable AWS)**: ECR →
   ECS Fargate (per-env task count, circuit-breaker deploys, target-tracking
   autoscaling) behind an ALB health-checked on `/readyz`; ElastiCache Redis
   with at-rest + in-transit encryption; the Redis auth token / URL come from
   **AWS Secrets Manager** and non-secret config from **SSM Parameter Store**
   (see [CONFIGURATION.md](CONFIGURATION.md)); `TRUST_PROXY=true` so client IPs
   come from the ALB. Multi-environment (dev/staging/prod) with per-env state.
+- **Docs (GitHub Pages)**: `docs.yml` builds the MkDocs handbook and deploys
+  the combined site on every push to `main` — landing tour at
+  [arashm0z.github.io/auth-api](https://arashm0z.github.io/auth-api/), this
+  handbook at [/docs/](https://arashm0z.github.io/auth-api/docs/).
 
 ## 7. Crosscutting concepts
 

@@ -2,7 +2,7 @@
 
 The whole service, drawn. These render live (Mermaid) and are the same source you
 can point at in a walkthrough. For a hand-tuned interactive version, see the
-companion visual guide linked from the README.
+[live landing site](https://arashm0z.github.io/auth-api/).
 
 ## 1. System context
 
@@ -130,7 +130,7 @@ Three key shapes — the entire persistent footprint.
 
 ```mermaid
 flowchart LR
-  U["user:NAME<br/>{username, passwordHash, createdAt}"]
+  U["user:NAME<br/>{username, passwordHash, createdAt, passwordRehashedAt?}"]
   I["rl:ip:IP<br/>counter + TTL"]
   F["rl:login-failures:USER<br/>counter + TTL, cleared on success"]
 ```
@@ -159,7 +159,9 @@ flowchart TD
   app --> routes[routes/]
   routes --> svc[services/user-service]
   routes --> domain[domain/<br/>username · policy · hasher]
-  svc --> plugins[plugins/<br/>redis · rate-limit]
+  app --> rl[plugins/rate-limit]
+  routes --> rl
+  svc --> rd[plugins/redis]
   svc --> domain
 ```
 
@@ -178,12 +180,19 @@ flowchart TD
 
 Every push runs the full gate; a red check blocks merge. Security scanners run in
 parallel and report findings to the repository Security tab (SARIF). Docs deploy
-to GitHub Pages on any change under `docs/`.
+to GitHub Pages on any change to `docs/` or the landing `pages/` on main — one
+combined site: landing at `/`, handbook at `/docs/`.
 
 ```mermaid
 flowchart LR
-  L[lint] --> T[typecheck] --> TE[test vs real Redis + coverage]
-  TE --> MU[mutation / Stryker] --> AU[npm audit high+] --> OA[OpenAPI drift + Spectral] --> DK[docker build + non-root assert]
+  PUSH[push / PR] --> ci
+  subgraph ci [ci.yml — five parallel jobs]
+    Q["quality: lint · typecheck<br/>OpenAPI drift + Spectral"]
+    TE[test vs real Redis + coverage]
+    MU[mutation / Stryker]
+    AU[npm audit high+]
+    DK[docker build + non-root assert]
+  end
   subgraph sec [security scanning → Security tab]
     CQ[CodeQL SAST]
     TR[Trivy image scan]
@@ -193,7 +202,7 @@ flowchart LR
   end
   subgraph iac [IaC assurance]
     TF[tofu fmt/validate/test + tflint]
-    LS[LocalStack apply — full AWS stack<br/>provisioned on emulated APIs, $0]
+    LS[LocalStack apply — on infra changes<br/>full AWS stack on emulated APIs, $0]
   end
   DK -.-> DOCS[combined Pages deploy<br/>landing / + handbook /docs/]
 ```
@@ -205,7 +214,7 @@ in plain env.
 
 ```mermaid
 flowchart LR
-  U[Internal callers] --> ALB[ALB HTTPS<br/>health → /readyz] --> ECS[ECS Fargate<br/>non-root tasks · autoscaling]
+  U[Internal callers] --> ALB["ALB HTTP :80 — demo has no ACM cert; prod adds :443 TLS<br/>health → /readyz"] --> ECS[ECS Fargate<br/>non-root tasks · autoscaling]
   ECS -->|rediss:// + AUTH| EC[(ElastiCache Redis<br/>encrypt at rest + transit)]
   ECR[ECR scan/immutable] -.image.-> ECS
   SM[Secrets Manager] -.redis token.-> ECS
