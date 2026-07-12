@@ -26,7 +26,7 @@ export function startTracing(env: NodeJS.ProcessEnv = process.env): NodeSDK | un
   const sdk = new NodeSDK({
     resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: env.OTEL_SERVICE_NAME ?? 'auth-api',
-      [ATTR_SERVICE_VERSION]: '1.0.0',
+      [ATTR_SERVICE_VERSION]: '1.0.1', // x-release-please-version
     }),
     // Exporter reads OTEL_EXPORTER_OTLP_ENDPOINT / headers from the env.
     traceExporter: new OTLPTraceExporter(),

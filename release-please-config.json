@@ -4,6 +4,12 @@
     ".": {
       "release-type": "node",
       "include-component-in-tag": false,
+      "extra-files": [
+        { "type": "generic", "path": "src/app.ts" },
+        { "type": "generic", "path": "src/observability/tracing.ts" },
+        { "type": "json", "path": "openapi.json", "jsonpath": "$.info.version" },
+        { "type": "json", "path": "web/public/openapi.json", "jsonpath": "$.info.version" }
+      ],
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
         { "type": "fix", "section": "Bug Fixes" },

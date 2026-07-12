@@ -127,7 +127,7 @@ export async function buildApp(
           '- **Passwords** follow NIST SP 800-63B-4 (min 15 chars, common-password blocklist, no composition rules) and are stored with Argon2id.',
           '- **Failed logins** are rate-limited per username, and a wrong password is indistinguishable from an unknown user — same status, body, and timing.',
         ].join('\n'),
-        version: '1.0.0',
+        version: '1.0.1', // x-release-please-version
       },
       servers: [{ url: 'http://localhost:3000', description: 'local' }],
       tags: [
