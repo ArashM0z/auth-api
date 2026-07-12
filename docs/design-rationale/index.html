@@ -1,0 +1,1627 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="arc42 architecture documentation for the authentication API — design rationale, diagrams, security, and compliance.">
+      
+      
+        <meta name="author" content="Arash Mozhdehi">
+      
+      
+        <link rel="canonical" href="https://arashm0z.github.io/auth-api/docs/design-rationale/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../architecture/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Design rationale - Authentication API — Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#design-rationale" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Authentication API — Architecture" class="md-header__button md-logo" aria-label="Authentication API — Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m9 3c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V5l9-4 9 4zm-9-5a3 3 0 0 0-3 3c0 1.31.83 2.42 2 2.83V18h2v-2h2v-2h-2v-2.17c1.17-.41 2-1.52 2-2.83a3 3 0 0 0-3-3"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Authentication API — Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Design rationale
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ArashM0z/auth-api" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArashM0z/auth-api
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Authentication API — Architecture" class="md-nav__button md-logo" aria-label="Authentication API — Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a1 1 0 0 1 1 1 1 1 0 0 1-1 1 1 1 0 0 1-1-1 1 1 0 0 1 1-1m9 3c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V5l9-4 9 4zm-9-5a3 3 0 0 0-3 3c0 1.31.83 2.42 2 2.83V18h2v-2h2v-2h-2v-2.17c1.17-.41 2-1.52 2-2.83a3 3 0 0 0-3-3"/></svg>
+
+    </a>
+    Authentication API — Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ArashM0z/auth-api" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArashM0z/auth-api
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design rationale
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design rationale
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quality-goals-the-tie-breaker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality goals — the tie-breaker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-fastify-5-over-express-nest-hono" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fastify 5 over Express / Nest / Hono
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-argon2id-over-bcrypt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Argon2id over bcrypt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-uniqueness-as-atomicity-redis-set-nx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Uniqueness as atomicity — Redis SET NX
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-timing-safe-login-no-enumeration-oracle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Timing-safe login (no enumeration oracle)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-purpose-built-redis-rate-limiter-and-the-race-it-fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Purpose-built Redis rate limiter — and the race it fixed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-rfc-9457-problem-details-for-every-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. RFC 9457 Problem Details for every error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-bounded-hashing-the-concurrency-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Bounded hashing — the concurrency gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-scope-discipline-no-jwt-session-issuance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Scope discipline — no JWT / session issuance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-201-created-a-documented-deviation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 201 Created — a documented deviation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-nist-sp-800-63b-4-password-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. NIST SP 800-63B-4 password policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-redis-as-system-of-record-the-honest-trade-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Redis as system of record — the honest trade-off
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-opentofu-for-iac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. OpenTofu for IaC
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-rationale-shows-up-in-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the rationale shows up in tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture (arc42)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagrams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagrams
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPLIANCE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance & AI governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEPLOYMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment (dev→staging→prod)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../OPERATIONS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations (runbook)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONFIGURATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../AI_WORKFLOW/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & technical debt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-fastify-over-express/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 · Fastify over Express
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-argon2id-over-bcrypt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 · Argon2id over bcrypt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-atomic-uniqueness-set-nx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 · Atomic uniqueness (SET NX)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-201-created-deviation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 · 201 Created deviation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0005-no-sessions-or-jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 · No sessions or JWT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0006-rfc9457-problem-details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 · RFC 9457 problem details
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0007-nist-password-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 · NIST password policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0008-custom-redis-rate-limiter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 · Custom Redis rate limiter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quality-goals-the-tie-breaker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quality goals — the tie-breaker
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-fastify-5-over-express-nest-hono" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fastify 5 over Express / Nest / Hono
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-argon2id-over-bcrypt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Argon2id over bcrypt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-uniqueness-as-atomicity-redis-set-nx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Uniqueness as atomicity — Redis SET NX
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-timing-safe-login-no-enumeration-oracle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Timing-safe login (no enumeration oracle)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-purpose-built-redis-rate-limiter-and-the-race-it-fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Purpose-built Redis rate limiter — and the race it fixed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-rfc-9457-problem-details-for-every-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. RFC 9457 Problem Details for every error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-bounded-hashing-the-concurrency-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Bounded hashing — the concurrency gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-scope-discipline-no-jwt-session-issuance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Scope discipline — no JWT / session issuance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-201-created-a-documented-deviation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 201 Created — a documented deviation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-nist-sp-800-63b-4-password-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. NIST SP 800-63B-4 password policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-redis-as-system-of-record-the-honest-trade-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Redis as system of record — the honest trade-off
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-opentofu-for-iac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. OpenTofu for IaC
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-rationale-shows-up-in-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the rationale shows up in tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="design-rationale">Design Rationale<a class="headerlink" href="#design-rationale" title="Permanent link">&para;</a></h1>
+<p>Every significant decision on this project, stated as a <strong>defensible rationale</strong>
+rather than a preference. The format is deliberate:</p>
+<blockquote>
+<p><strong>Decision</strong> → <strong>Forces</strong> (what pressures the choice) → <strong>Rationale</strong> (why this
+one) → <strong>Alternatives rejected</strong> → <strong>Consequences</strong> (what we accept).</p>
+</blockquote>
+<p>The <a href="../adr/">ADRs</a> hold the long form; this page is the distilled
+summary.</p>
+<h2 id="quality-goals-the-tie-breaker">Quality goals — the tie-breaker<a class="headerlink" href="#quality-goals-the-tie-breaker" title="Permanent link">&para;</a></h2>
+<p>When two good options conflict, this ordering decides:</p>
+<p><strong>security &gt; correctness &gt; operability &gt; throughput &gt; feature count.</strong></p>
+<p>That single line explains almost everything below: why login is deliberately
+~37 ms (security beats throughput), why registration wastes a hash on a conflict
+(security beats efficiency), and why there's no JWT layer (correctness and
+scope-discipline beat feature count).</p>
+<hr />
+<h2 id="1-fastify-5-over-express-nest-hono">1. Fastify 5 over Express / Nest / Hono<a class="headerlink" href="#1-fastify-5-over-express-nest-hono" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> The input gate is the most security-critical code in an auth API,
+  and it must be impossible to forget on a route. "Fast" is in the brief.</li>
+<li><strong>Rationale.</strong> Fastify compiles a JSON Schema per route (AJV) for validation,
+  and — decisively — <strong>serializes responses against a schema too</strong>
+  (fast-json-stringify). That makes "a password hash can never appear in a
+  response" a <em>structural</em> guarantee, not a convention. The same TypeBox schema
+  drives runtime validation, compile-time types, and the OpenAPI document — one
+  source of truth, zero drift.</li>
+<li><strong>Alternatives rejected.</strong> Express ships no validation and no response
+  serialization; the guarantee would rest on discipline. NestJS's DI machinery
+  is disproportionate for two endpoints. Hono targets edge runtimes we don't
+  deploy to.</li>
+<li><strong>Consequences.</strong> Reviewers less familiar with Fastify need its hook docs. Worth
+  it. → <a href="../adr/0001-fastify-over-express/">ADR-0001</a></li>
+</ul>
+<h2 id="2-argon2id-over-bcrypt">2. Argon2id over bcrypt<a class="headerlink" href="#2-argon2id-over-bcrypt" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> Password hashing is the single most-scrutinized choice in an auth
+  service, and the store is the crown-jewel target.</li>
+<li><strong>Rationale.</strong> OWASP lists Argon2id <strong>first</strong>; bcrypt is "legacy-only." Argon2id
+  is memory-hard — ~19 MiB per guess versus bcrypt's ~4 KB — which is what makes
+  cracking a <em>leaked</em> store expensive. And bcrypt <strong>silently truncates at 72
+  bytes</strong>, a real correctness bug with a generous max length. PHC-format hashes
+  embed their parameters, which enables <strong>rehash-on-login</strong>.</li>
+<li><strong>Alternatives rejected.</strong> bcrypt (truncation + weaker); scrypt (OWASP-ranked
+  below Argon2id); plain PBKDF2 (not memory-hard).</li>
+<li><strong>Consequences.</strong> Native module (mitigated by prebuilt binaries); memory ×
+  concurrency must be bounded — see the hashing gate (#7).
+  → <a href="../adr/0002-argon2id-over-bcrypt/">ADR-0002</a></li>
+</ul>
+<h2 id="3-uniqueness-as-atomicity-redis-set-nx">3. Uniqueness as atomicity — Redis <code>SET NX</code><a class="headerlink" href="#3-uniqueness-as-atomicity-redis-set-nx" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> "Usernames are unique" hides the classic check-then-set race: two
+  concurrent registrations both pass an <code>EXISTS</code> check, both write, and the first
+  user is silently orphaned.</li>
+<li><strong>Rationale.</strong> Write the record with <code>SET user:NAME json NX</code> — atomic
+  create-if-absent. A <code>nil</code> reply <strong>is</strong> the "taken" verdict (→ 409). There is no
+  separate existence check anywhere in the write path, so the race cannot exist.
+  Redis's single-threaded execution makes uniqueness a property of the datastore,
+  not of application discipline.</li>
+<li><strong>Alternatives rejected.</strong> <code>EXISTS</code>-then-<code>SET</code> (the race); <code>WATCH</code>/<code>MULTI</code> retry
+  loops or Lua (more moving parts for the same guarantee).</li>
+<li><strong>Consequences.</strong> The whole user lives under one JSON key rather than a hash +
+  index — which also removes an entire class of index-desync bugs. A test fires 8
+  concurrent registrations and asserts exactly one 201 and seven 409s.
+  → <a href="../adr/0003-atomic-uniqueness-set-nx/">ADR-0003</a></li>
+</ul>
+<h2 id="4-timing-safe-login-no-enumeration-oracle">4. Timing-safe login (no enumeration oracle)<a class="headerlink" href="#4-timing-safe-login-no-enumeration-oracle" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> If "unknown user" is cheaper or different from "wrong password", an
+  attacker can enumerate accounts by response <em>or</em> by stopwatch.</li>
+<li><strong>Rationale.</strong> Three defenses compose: (a) the login schema is deliberately
+  loose (any non-empty strings) so a malformed username returns the same 401, not
+  a 400; (b) the unknown-user path runs a real Argon2id verify against a
+  <strong>boot-time dummy hash</strong>, so it costs the same wall-clock; (c) both failure
+  bodies and headers are byte-identical. Registration hashes <strong>before</strong> the
+  <code>SET NX</code>, so a 409 costs the same as a 201.</li>
+<li><strong>Alternatives rejected.</strong> Returning 404/400 for unknown usernames (an oracle);
+  skipping the hash when the user is absent (a timing oracle); a <code>Server-Timing</code>
+  header (hands the attacker the measurement).</li>
+<li><strong>Consequences.</strong> A wasted hash on every failed login and every conflict — the
+  deliberate price of leaking nothing. An integration test measures both medians
+  and asserts they're within tolerance.</li>
+</ul>
+<h2 id="5-purpose-built-redis-rate-limiter-and-the-race-it-fixed">5. Purpose-built Redis rate limiter — and the race it fixed<a class="headerlink" href="#5-purpose-built-redis-rate-limiter-and-the-race-it-fixed" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> Brute-force defense needs two coordinated windows (per-IP for all
+  traffic; per-username failures, cleared on success) and must hold <strong>across
+  replicas</strong>.</li>
+<li><strong>Rationale.</strong> ~70 lines: <code>INCR</code> + <code>EXPIRE NX</code> + <code>TTL</code> in one <code>MULTI</code>. State in
+  Redis means the cap is correct at any horizontal scale (an in-memory limiter
+  multiplies its threshold by the instance count). The failure counter keys on the
+  <strong>submitted</strong> username, real or not, so it can't be used as an existence probe.
+  <strong>The critical detail:</strong> the failure slot is consumed with an atomic <code>INCR</code>
+  <em>before</em> the expensive verify. A read-only peek-then-check would be a TOCTOU race
+  — a concurrent burst could all read <code>count &lt; max</code> and slip past the cap. This
+  was a real HIGH-severity finding from the adversarial review; the fix is
+  increment-then-read, and it has a concurrency regression test.</li>
+<li><strong>Alternatives rejected.</strong> <code>@fastify/rate-limit</code> (built around ioredis; no clean
+  atomic consume-and-check <code>hit</code> / success-<code>clear</code> semantics for the failure
+  window; this project standardizes on node-redis).</li>
+<li><strong>Consequences.</strong> Fixed windows allow ≤2× burst at the edges — accepted at these
+  thresholds; a sliding-log/token-bucket is the documented refinement.
+  → <a href="../adr/0008-custom-redis-rate-limiter/">ADR-0008</a></li>
+</ul>
+<h2 id="6-rfc-9457-problem-details-for-every-error">6. RFC 9457 Problem Details for every error<a class="headerlink" href="#6-rfc-9457-problem-details-for-every-error" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> The brief wants "proper error checking, with error responses in a
+  JSON body." Most APIs invent an ad-hoc <code>{ error }</code> envelope.</li>
+<li><strong>Rationale.</strong> Error format is a <em>standards-citation</em> exercise, not an invention.
+  Every non-2xx is <code>application/problem+json</code> with a stable machine-readable
+  <code>code</code>, a <code>requestId</code> correlating to logs, and a field-level <code>errors[]</code> on
+  validation. Uniformity is itself a security property — the 401 body is identical
+  for every failure cause <strong>by construction</strong>.</li>
+<li><strong>Alternatives rejected.</strong> Bespoke error envelope (no tooling, no taxonomy);
+  leaving <code>type</code> as <code>about:blank</code> (loses the machine-readable problem taxonomy).</li>
+<li><strong>Consequences.</strong> One deliberate asymmetry: login failures carry a generic detail
+  (enumeration defense) while registration failures list <em>every</em> violated rule at
+  once (developer experience). → <a href="../adr/0006-rfc9457-problem-details/">ADR-0006</a></li>
+</ul>
+<h2 id="7-bounded-hashing-the-concurrency-gate">7. Bounded hashing — the concurrency gate<a class="headerlink" href="#7-bounded-hashing-the-concurrency-gate" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> Argon2id's memory-hardness is the security feature <em>and</em> an
+  operational hazard: each in-flight hash reserves ~19 MiB. Unbounded concurrency
+  turns a login burst into a self-inflicted memory DoS.</li>
+<li><strong>Rationale.</strong> All hash/verify work goes through a <code>p-limit</code> gate
+  (<code>maxConcurrency</code> default 8), so worst-case hashing memory is a bounded,
+  predictable <code>8 × 19 ≈ 152 MiB</code>. The gate's queue depth is exported as a
+  Prometheus gauge — the signal to scale out <em>before</em> logins start queueing.</li>
+<li><strong>Alternatives rejected.</strong> No gate (OOM under load); a global mutex (throughput
+  collapse); tuning Argon2 down for speed (weakens the actual security property).</li>
+<li><strong>Consequences.</strong> Sustained login throughput is capped — deliberately. The
+  ceiling is <code>maxConcurrency ÷ verify-time ≈ 216 req/s</code>, and the benchmark lands
+  within 4% of that math.</li>
+</ul>
+<h2 id="8-scope-discipline-no-jwt-session-issuance">8. Scope discipline — no JWT / session issuance<a class="headerlink" href="#8-scope-discipline-no-jwt-session-issuance" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> It is tempting to bolt on JWTs — and thereby become gradeable on
+  token expiry, revocation, and rotation that a two-endpoint brief gives no room
+  to finish properly.</li>
+<li><strong>Rationale.</strong> The brief asks for exactly two capabilities. Credential
+  <em>verification</em> is a complete, composable internal service; a gateway or session
+  service consumes it and owns token lifecycle. A half-built token layer is
+  negative value in both security and signal.</li>
+<li><strong>Alternatives rejected.</strong> Ship a JWT layer (out of scope, under-designed).</li>
+<li><strong>Consequences.</strong> Callers needing "stay logged in" wait for the documented next
+  iteration — by design, not omission. → <a href="../adr/0005-no-sessions-or-jwt/">ADR-0005</a></li>
+</ul>
+<h2 id="9-201-created-a-documented-deviation">9. 201 Created — a documented deviation<a class="headerlink" href="#9-201-created-a-documented-deviation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> The brief says "200 OK for correct requests." RFC 9110 says resource
+  creation is a 201 + <code>Location</code>.</li>
+<li><strong>Rationale.</strong> Follow the RFC where the brief is generic, follow the brief where
+  it is specific (the 200/401 clause plainly targets <em>login</em>). Silent literal
+  compliance would be the <em>less</em> correct API; silent deviation would be worse.
+  So: deviate, and write it down.</li>
+<li><strong>Consequences.</strong> A reviewer hard-coding <code>=== 200</code> on create sees 201; the README
+  and this page flag it up front. → <a href="../adr/0004-201-created-deviation/">ADR-0004</a></li>
+</ul>
+<h2 id="10-nist-sp-800-63b-4-password-policy">10. NIST SP 800-63B-4 password policy<a class="headerlink" href="#10-nist-sp-800-63b-4-password-policy" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> "Pass a basic security audit (e.g. password complexity)." The legacy
+  reflex is composition rules; NIST rev-4 (final, 2025) <em>prohibits</em> them.</li>
+<li><strong>Rationale.</strong> Length is the only strength rule (≥15 code points for
+  single-factor), no composition rules, screen against a 10k-common blocklist, NFC
+  normalization, reject-never-truncate, no forced rotation. Citing the current
+  revision of the governing standard <strong>is</strong> passing the audit.</li>
+<li><strong>Alternatives rejected.</strong> Composition rules (produce <code>P@ssw0rd1!</code>, reduce real
+  strength); silent truncation (bcrypt's bug).</li>
+<li><strong>Consequences.</strong> A reviewer trying <code>Passw0rd!</code> gets a 422 explaining the 15-char
+  floor and citing the standard. → <a href="../adr/0007-nist-password-policy/">ADR-0007</a></li>
+</ul>
+<h2 id="11-redis-as-system-of-record-the-honest-trade-off">11. Redis as system of record — the honest trade-off<a class="headerlink" href="#11-redis-as-system-of-record-the-honest-trade-off" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> The brief mandates Redis for storage. Credentials are durable data.</li>
+<li><strong>Rationale.</strong> Configure durability rather than default it: AOF <code>appendfsync
+everysec</code> bounds crash-loss to ~1s of writes; production notes recommend RDB+AOF
+  together.</li>
+<li><strong>Alternatives rejected.</strong> Postgres as the system of record now (the brief
+  mandates Redis for storage; named as the production evolution below instead).</li>
+<li><strong>Consequences — stated plainly.</strong> For a regulated mortgage fintech I would make
+  <strong>Postgres</strong> the system of record and keep Redis for rate-limiting and sessions.
+  Naming this before being asked is the point: it's a conscious, bounded trade-off,
+  not an oversight.</li>
+</ul>
+<h2 id="12-opentofu-for-iac">12. OpenTofu for IaC<a class="headerlink" href="#12-opentofu-for-iac" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Forces.</strong> New IaC in 2026 that wants to stay open-source.</li>
+<li><strong>Rationale.</strong> OpenTofu is the Linux Foundation's MPL-2.0 fork of Terraform after
+  HashiCorp's BUSL relicense — drop-in compatible with the HCL/provider ecosystem.
+  The stack (ECS Fargate, ALB, ElastiCache, ECR) is the standard shape for containerized services on AWS,
+  and its security invariants are asserted by native <code>tofu test</code>, not hoped for.</li>
+<li><strong>Alternatives rejected.</strong> Terraform proper (BUSL 1.1 since 2023 —
+  source-available, not open source); CloudFormation/CDK (locks the IaC to one
+  cloud's tooling).</li>
+<li><strong>Consequences.</strong> Never applied to billable AWS — but applied end-to-end
+  against LocalStack (emulated AWS APIs), so the Terraform is exercised, not
+  just linted, and the demo stays zero-cost.</li>
+</ul>
+<hr />
+<h2 id="how-the-rationale-shows-up-in-tests">How the rationale shows up in tests<a class="headerlink" href="#how-the-rationale-shows-up-in-tests" title="Permanent link">&para;</a></h2>
+<p>A rationale is only "solid" if a regression would be caught. Each decision above
+has an executable guard:</p>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>The test that proves it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Atomic uniqueness (#3)</td>
+<td>8 concurrent registrations → exactly one 201</td>
+</tr>
+<tr>
+<td>Timing safety (#4)</td>
+<td>measured medians of unknown-user vs wrong-password within tolerance</td>
+</tr>
+<tr>
+<td>TOCTOU fix (#5)</td>
+<td>concurrent-burst regression test on the failure limiter</td>
+</tr>
+<tr>
+<td>Response whitelisting (#1)</td>
+<td>security suite asserts no hash/PHC prefix ever appears</td>
+</tr>
+<tr>
+<td>Reject-not-truncate (#10)</td>
+<td>over-long password → 422 with a <code>max_length</code> rule</td>
+</tr>
+</tbody>
+</table>
+<p>That last column is why I can say these are decisions I can <strong>defend line by
+line</strong>, not assertions.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture (arc42)">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Architecture (arc42)
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Documentation for an internal authentication API — MIT licensed.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ArashM0z/auth-api" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
