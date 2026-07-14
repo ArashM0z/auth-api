@@ -60,7 +60,7 @@
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@testcontainers/redis": "^12.0.0",
     "@types/autocannon": "^7.12.7",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.0",
     "ajv": "^8.20.0",
     "autocannon": "^8.0.0",
