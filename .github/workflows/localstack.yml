@@ -42,7 +42,7 @@ jobs:
           tofu_wrapper: false
 
       - name: Start LocalStack (Pro)
-        uses: localstack/setup-localstack@v0.2.3
+        uses: localstack/setup-localstack@v0.3.2
         with:
           image-tag: latest
           install-awslocal: 'true'
